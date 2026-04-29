@@ -56,6 +56,7 @@
 #include <psapi.h>
 #include <io.h>
 #elif (defined(__APPLE__) && defined(__MACH__))
+#include <mach-o/dyld.h>
 #include <sys/sysctl.h>
 #include <libproc.h>
 #elif (defined(__linux__) || defined(__ANDROID__))
@@ -70,6 +71,7 @@
 #include <sys/sysctl.h>
 #include <kvm.h>
 #elif defined(__sun)
+#include <cerrno>
 #include <kvm.h>
 #include <dirent.h>
 #include <libproc.h>
@@ -444,7 +446,7 @@ namespace ngs::ps {
     DIR *proc = opendir("/proc");
     struct dirent *ent = nullptr;
     NGS_PROCID tgid = 0;
-    if (proc == nullptr) return vec;
+    if (!proc) return vec;
     while ((ent = readdir(proc))) {
       if (!isdigit(*ent->d_name))
         continue;
@@ -548,7 +550,7 @@ namespace ngs::ps {
     return (!kill(proc_id, SIGSTOP));
     #else
     HANDLE proc = open_process_with_debug_privilege(proc_id);
-    if (proc == nullptr) return false;
+    if (!proc) return false;
     typedef NTSTATUS (__stdcall *NTSP)(IN HANDLE ProcessHandle);
     HMODULE hModule = GetModuleHandleW(L"ntdll.dll");
     if (!hModule) return false;
@@ -568,7 +570,7 @@ namespace ngs::ps {
     return (!kill(proc_id, SIGCONT));
     #else
     HANDLE proc = open_process_with_debug_privilege(proc_id);
-    if (proc == nullptr) return false;
+    if (!proc) return false;
     typedef NTSTATUS (__stdcall *NTRP)(IN HANDLE ProcessHandle);
     HMODULE hModule = GetModuleHandleW(L"ntdll.dll");
     if (!hModule) return false;
@@ -588,7 +590,7 @@ namespace ngs::ps {
     return (!kill(proc_id, SIGKILL));
     #else
     HANDLE proc = open_process_with_debug_privilege(proc_id);
-    if (proc == nullptr) return false;
+    if (!proc) return false;
     bool result = TerminateProcess(proc, 0);
     CloseHandle(proc);
     return result;
@@ -902,7 +904,7 @@ namespace ngs::ps {
     std::string path;
     if (proc_id < 0) return path;
     #if defined(_WIN32)
-    if (proc_id == GetCurrentProcessId()) {
+    if (proc_id == proc_id_from_self()) {
       wchar_t buffer[MAX_PATH];
       if (GetModuleFileNameW(nullptr, buffer, sizeof(buffer))) {
         wchar_t exe[MAX_PATH];
@@ -912,7 +914,7 @@ namespace ngs::ps {
       }
     } else {
       HANDLE proc = open_process_with_debug_privilege(proc_id);
-      if (proc == nullptr) return path;
+      if (!proc) return path;
       wchar_t buffer[MAX_PATH];
       DWORD size = sizeof(buffer);
       if (QueryFullProcessImageNameW(proc, 0, buffer, &size)) {
@@ -924,17 +926,35 @@ namespace ngs::ps {
       CloseHandle(proc);
     }
     #elif (defined(__APPLE__) && defined(__MACH__))
-    char exe[PROC_PIDPATHINFO_MAXSIZE];
-    if (proc_pidpath(proc_id, exe, sizeof(exe)) > 0) {
-      char buffer[PATH_MAX];
-      if (realpath(exe, buffer)) {
-        path = buffer;
+    if (proc_id == proc_id_from_self()) {
+      char exe[PATH_MAX];
+      std::uint32_t size = sizeof(exe);
+      if (!_NSGetExecutablePath(exe, &size)) {
+        char buffer[PATH_MAX];
+        if (realpath(exe, buffer)) {
+          path = buffer;
+        }
+      }
+    } else {
+      char exe[PROC_PIDPATHINFO_MAXSIZE];
+      if (proc_pidpath(proc_id, exe, sizeof(exe)) > 0) {
+        char buffer[PATH_MAX];
+        if (realpath(exe, buffer)) {
+          path = buffer;
+        }
       }
     }
     #elif (defined(__linux__) || defined(__ANDROID__))
     char exe[PATH_MAX];
-    if (realpath(("/proc/" + std::to_string(proc_id) + "/exe").c_str(), exe)) {
-      path = exe;
+    if (proc_id == proc_id_from_self()) {
+      if (realpath("/proc/self/exe", exe)) {
+        path = exe;
+      }
+    } else {
+      if (realpath((std::string("/proc/") + std::to_string(proc_id) + 
+        std::string("/exe")).c_str(), exe)) {
+        path = exe;
+      }
     }
     #elif (defined(__FreeBSD__) || defined(__DragonFly__))
     int mib[4];
@@ -988,7 +1008,7 @@ namespace ngs::ps {
             fallback:
             char buffer[PATH_MAX];
             if (!stat(exe.c_str(), &st) && (st.st_mode & S_IXUSR) &&
-              (st.st_mode & S_IFREG) && realpath(exe.c_str(), buffer) &&
+              S_ISREG(st.st_mode) && realpath(exe.c_str(), buffer) &&
               st.st_dev == (dev_t)kif[i].va_fsid && st.st_ino == (ino_t)kif[i].va_fileid) {
               res = buffer;
             }
@@ -1070,31 +1090,45 @@ namespace ngs::ps {
         }
       }
     }
-    if (!path.empty()) {
-      errno = 0;
-    }
     #elif defined(__sun)
-    int err = 0;
-    char exe[PATH_MAX];
-    struct ps_prochandle *P = Pgrab(proc_id, PGRAB_RDONLY, &err);
-    if (P) {
-      if (!err && !errno) {
-        char buffer[PATH_MAX];
-        if (Pexecname(P, buffer, sizeof(buffer))) {
-          if (realpath(buffer, exe)) {
-            path = exe;
-          }
+    if (proc_id == proc_id_from_self()) {
+      const char *execname = getexecname();
+      if (execname) {
+        char exe[PATH_MAX];
+        if (realpath(execname, exe)) {
+          path = exe;
         }
       }
-      Pfree(P);
+    } else {
+      int err = 0;
+      char buffer[PATH_MAX];
+      struct ps_prochandle *P = nullptr;
+      P = Pgrab(proc_id, PGRAB_RDONLY, &err);
+      if (P) {
+        if (!err) {
+          if (Pexecname(P, buffer, sizeof(buffer))) {
+            char exe[PATH_MAX];
+            if (realpath(buffer, exe)) {
+              path = exe;
+            }
+          }
+        }
+        Pfree(P);
+      }
     }
-    if (!path.empty()) {
-      goto finish;
+    if (path.empty()) {
+      char exe[PATH_MAX];
+      if (proc_id == proc_id_from_self()) {
+        if (realpath("/proc/self/path/a.out", exe)) {
+          path = exe;
+        }
+      } else {
+        if (realpath((std::string("/proc/") + std::to_string(proc_id) + 
+          std::string("/path/a.out")).c_str(), exe)) {
+          path = exe;
+        }
+      }
     }
-    if (realpath(("/proc/" + std::to_string(proc_id) + "/path/a.out").c_str(), exe)) {
-      path = exe;
-    }
-    finish:
     #endif
     return path;
   }
@@ -1103,74 +1137,106 @@ namespace ngs::ps {
     std::string path;
     if (proc_id < 0) return path;
     #if defined(_WIN32)
-    HANDLE proc = open_process_with_debug_privilege(proc_id);
-    if (proc == nullptr) return path;
-    std::vector<wchar_t> buffer = cmd_env_cwd_from_proc(proc, MEMCWD);
-    if (!buffer.empty()) {
+    if (proc_id == proc_id_from_self()) {
       wchar_t cwd[MAX_PATH];
-      if (_wfullpath(cwd, &buffer[0], MAX_PATH)) {
-        path = narrow(cwd);
-        if (!path.empty() && std::count(path.begin(), path.end(), '\\') > 1 && path.back() == '\\') {
-          path = path.substr(0, path.length() - 1);
+      if (GetCurrentDirectoryW(MAX_PATH, cwd)) {
+        wchar_t buffer[MAX_PATH];
+        if (_wfullpath(buffer, cwd, MAX_PATH)) {
+          path = narrow(buffer);
+        } 
+      }
+    } else {
+      HANDLE proc = open_process_with_debug_privilege(proc_id);
+      if (!proc) return path;
+      std::vector<wchar_t> cwd = cmd_env_cwd_from_proc(proc, MEMCWD);
+      if (!cwd.empty()) {
+        wchar_t buffer[MAX_PATH];
+        if (_wfullpath(buffer, &cwd[0], MAX_PATH)) {
+          path = narrow(buffer);
+          if (!path.empty() && std::count(path.begin(), path.end(), '\\') > 1 && path.back() == '\\') {
+            path = path.substr(0, path.length() - 1);
+          }
         }
       }
+      CloseHandle(proc);
     }
-    CloseHandle(proc);
     #elif (defined(__APPLE__) && defined(__MACH__))
-    proc_vnodepathinfo vpi;
-    if (proc_pidinfo(proc_id, PROC_PIDVNODEPATHINFO, 0, &vpi, sizeof(vpi)) > 0) {
-      char buffer[PATH_MAX];
-      if (realpath(vpi.pvi_cdir.vip_path, buffer)) {
-        path = buffer;
+    if (proc_id == proc_id_from_self()) {
+      char cwd[PATH_MAX];
+      if (getcwd(cwd, PATH_MAX)) {
+        char buffer[PATH_MAX];
+        if (realpath(cwd, buffer)) {
+           path = buffer;
+        }
+      }
+    } else {
+      proc_vnodepathinfo vpi;
+      if (proc_pidinfo(proc_id, PROC_PIDVNODEPATHINFO, 0, &vpi, sizeof(vpi)) > 0) {
+        char cwd[PATH_MAX];
+        if (realpath(vpi.pvi_cdir.vip_path, cwd)) {
+          path = cwd;
+        }
       }
     }
     #elif (defined(__linux__) || defined(__ANDROID__))
     char cwd[PATH_MAX];
-    if (realpath(("/proc/" + std::to_string(proc_id) + "/cwd").c_str(), cwd)) {
-      path = cwd;
+    if (proc_id == proc_id_from_self()) {
+      if (getcwd(cwd, PATH_MAX)) {
+        char buffer[PATH_MAX];
+        if (realpath(cwd, buffer)) {
+           path = buffer;
+        }
+      }
+    } else {
+      if (realpath((std::string("/proc/") + std::to_string(proc_id) + 
+        std::string("/cwd")).c_str(), cwd)) {
+        path = cwd;
+      }
     }
     #elif defined(__FreeBSD__)
-    int mib[4];
-    struct kinfo_file kif;
-    std::size_t len = sizeof(kif);
-    mib[0] = CTL_KERN;
-    mib[1] = KERN_PROC;
-    mib[2] = KERN_PROC_CWD;
-    mib[3] = proc_id;
-    if (!sysctl(mib, 4, nullptr, &len, nullptr, 0)) {
-      memset(&kif, 0, len);
-      if (!sysctl(mib, 4, &kif, &len, nullptr, 0)) {
+    if (proc_id == proc_id_from_self()) {
+      char cwd[PATH_MAX];
+      if (getcwd(cwd, PATH_MAX)) {
         char buffer[PATH_MAX];
-        if (realpath(kif.kf_path, buffer)) {
+        if (realpath(cwd, buffer)) {
            path = buffer;
+        }
+      }
+    } else {
+      int mib[4];
+      struct kinfo_file kif;
+      std::size_t len = sizeof(kif);
+      mib[0] = CTL_KERN;
+      mib[1] = KERN_PROC;
+      mib[2] = KERN_PROC_CWD;
+      mib[3] = proc_id;
+      if (!sysctl(mib, 4, nullptr, &len, nullptr, 0)) {
+        memset(&kif, 0, len);
+        if (!sysctl(mib, 4, &kif, &len, nullptr, 0)) {
+          char cwd[PATH_MAX];
+          if (realpath(kif.kf_path, cwd)) {
+             path = cwd;
+          }
         }
       }
     }
     #elif defined(__DragonFly__)
-    int mib[4];
-    char cwd[PATH_MAX];
-    std::size_t len = sizeof(cwd);
-    mib[0] = CTL_KERN;
-    mib[1] = KERN_PROC;
-    mib[2] = KERN_PROC_CWD;
-    mib[3] = proc_id;
-    if (!sysctl(mib, 4, cwd, &len, nullptr, 0)) {
-      char buffer[PATH_MAX];
-      if (realpath(cwd, buffer)) {
-        path = buffer;
+    if (proc_id == proc_id_from_self()) {
+      char cwd[PATH_MAX];
+      if (getcwd(cwd, PATH_MAX)) {
+        char buffer[PATH_MAX];
+        if (realpath(cwd, buffer)) {
+           path = buffer;
+        }
       }
-    }
-    #elif defined(__NetBSD__)
-    int mib[4];
-    std::size_t len = 0;
-    mib[0] = CTL_KERN;
-    mib[1] = KERN_PROC_ARGS;
-    mib[2] = proc_id;
-    mib[3] = KERN_PROC_CWD;
-    if (!sysctl(mib, 4, nullptr, &len, nullptr, 0)) {
-      std::vector<char> vecbuff;
-      vecbuff.resize(len);
-      char *cwd = &vecbuff[0];
+    } else {
+      int mib[4];
+      char cwd[PATH_MAX];
+      std::size_t len = sizeof(cwd);
+      mib[0] = CTL_KERN;
+      mib[1] = KERN_PROC;
+      mib[2] = KERN_PROC_CWD;
+      mib[3] = proc_id;
       if (!sysctl(mib, 4, cwd, &len, nullptr, 0)) {
         char buffer[PATH_MAX];
         if (realpath(cwd, buffer)) {
@@ -1178,27 +1244,98 @@ namespace ngs::ps {
         }
       }
     }
-    #elif defined(__OpenBSD__)
-    int mib[3];
-    std::size_t len = 0;
-    mib[0] = CTL_KERN;
-    mib[1] = KERN_PROC_CWD;
-    mib[2] = proc_id;
-    if (!sysctl(mib, 3, nullptr, &len, nullptr, 0)) {
-      std::vector<char> vecbuff;
-      vecbuff.resize(len);
-      char *cwd = &vecbuff[0];
-      if (!sysctl(mib, 3, cwd, &len, nullptr, 0)) {
+    #elif defined(__NetBSD__)
+    if (proc_id == proc_id_from_self()) {
+      char cwd[PATH_MAX];
+      if (getcwd(cwd, PATH_MAX)) {
         char buffer[PATH_MAX];
         if (realpath(cwd, buffer)) {
-          path = buffer;
+           path = buffer;
+        }
+      }
+    } else {
+      int mib[4];
+      std::size_t len = 0;
+      mib[0] = CTL_KERN;
+      mib[1] = KERN_PROC_ARGS;
+      mib[2] = proc_id;
+      mib[3] = KERN_PROC_CWD;
+      if (!sysctl(mib, 4, nullptr, &len, nullptr, 0)) {
+        std::vector<char> vecbuff;
+        vecbuff.resize(len);
+        char *cwd = &vecbuff[0];
+        if (!sysctl(mib, 4, cwd, &len, nullptr, 0)) {
+          char buffer[PATH_MAX];
+          if (realpath(cwd, buffer)) {
+            path = buffer;
+          }
+        }
+      }
+    }
+    #elif defined(__OpenBSD__)
+    if (proc_id == proc_id_from_self()) {
+      char cwd[PATH_MAX];
+      if (getcwd(cwd, PATH_MAX)) {
+        char buffer[PATH_MAX];
+        if (realpath(cwd, buffer)) {
+           path = buffer;
+        }
+      }
+    } else {
+      int mib[3];
+      std::size_t len = 0;
+      mib[0] = CTL_KERN;
+      mib[1] = KERN_PROC_CWD;
+      mib[2] = proc_id;
+      if (!sysctl(mib, 3, nullptr, &len, nullptr, 0)) {
+        std::vector<char> vecbuff;
+        vecbuff.resize(len);
+        char *cwd = &vecbuff[0];
+        if (!sysctl(mib, 3, cwd, &len, nullptr, 0)) {
+          char buffer[PATH_MAX];
+          if (realpath(cwd, buffer)) {
+            path = buffer;
+          }
         }
       }
     }
     #elif defined(__sun)
     char cwd[PATH_MAX];
-    if (realpath(("/proc/" + std::to_string(proc_id) + "/path/cwd").c_str(), cwd)) {
-      path = cwd;
+    if (proc_id == proc_id_from_self()) {
+      if (getcwd(cwd, PATH_MAX)) {
+        char buffer[PATH_MAX];
+        if (realpath(cwd, buffer)) {
+           path = buffer;
+        }
+      }
+    } else {
+      // __illumos__ macro is not defined by the OS and 
+      // should be added manually by your build system:
+      #if defined(__illumos__)
+      int err = 0;
+      struct ps_prochandle *P = nullptr;
+      P = Pgrab(proc_id, PGRAB_RDONLY, &err);
+      if (P) {
+        if (!err) {
+          prcwd_t *cwd = nullptr;
+          if (Pcwd(P, &cwd)) {
+            char buffer[PATH_MAX];
+            if (realpath(cwd->prcwd_cwd, buffer)) {
+              path = buffer;
+            }
+            Pcwd_free(cwd);
+          }
+        }
+        Pfree(P);
+        if (!path.empty()) {
+          return path;
+        }
+      }
+      #endif
+      if (realpath((std::string("/proc/") + std::to_string(proc_id) + 
+        std::string("/path/cwd")).c_str(), cwd)) {
+        path = cwd;
+      }
     }
     #endif
     return path;
@@ -1223,7 +1360,7 @@ namespace ngs::ps {
     if (proc_id < 0) return vec;
     #if defined(_WIN32)
     HANDLE proc = open_process_with_debug_privilege(proc_id);
-    if (proc == nullptr) return vec;
+    if (!proc) return vec;
     int cmdsize = 0;
     std::vector<wchar_t> buffer = cmd_env_cwd_from_proc(proc, MEMCMD);
     if (!buffer.empty()) {
@@ -1240,7 +1377,12 @@ namespace ngs::ps {
     #elif (defined(__APPLE__) && defined(__MACH__))
     vec = cmd_env_from_proc_id(proc_id, MEMCMD);
     #elif (defined(__linux__) || defined(__ANDROID__) || defined(__sun))
-    FILE *file = fopen(("/proc/" + std::to_string(proc_id) + "/cmdline").c_str(), "rb");
+    FILE *file = nullptr;
+    if (proc_id == proc_id_from_self()) { 
+      file = fopen("/proc/self/cmdline", "rb");
+    } else {
+      file = fopen(("/proc/" + std::to_string(proc_id) + "/cmdline").c_str(), "rb");
+    }
     if (file) {
       char *cmd = nullptr;
       std::size_t size = 0;
@@ -1334,7 +1476,7 @@ namespace ngs::ps {
     if (proc_id < 0) return vec;
     #if defined(_WIN32)
     HANDLE proc = open_process_with_debug_privilege(proc_id);
-    if (proc == nullptr) return vec;
+    if (!proc) return vec;
     std::vector<wchar_t> buffer = cmd_env_cwd_from_proc(proc, MEMENV);
     int i = 0;
     if (!buffer.empty()) {
@@ -1348,7 +1490,12 @@ namespace ngs::ps {
     #elif (defined(__APPLE__) && defined(__MACH__))
     vec = cmd_env_from_proc_id(proc_id, MEMENV);
     #elif (defined(__linux__) || defined(__ANDROID__) || defined(__sun))
-    FILE *file = fopen(("/proc/" + std::to_string(proc_id) + "/environ").c_str(), "rb");
+    FILE *file = nullptr;
+    if (proc_id == proc_id_from_self()) { 
+      file = fopen("/proc/self/environ", "rb");
+    } else {
+      file = fopen(("/proc/" + std::to_string(proc_id) + "/environ").c_str(), "rb");
+    }
     if (file) {
       char *env = nullptr;
       std::size_t size = 0;
@@ -1540,12 +1687,12 @@ namespace ngs::ps {
       }
       close(p_stdin[0]);
       close(p_stdout[1]);
-      if (infp == nullptr) {
+      if (!infp) {
         close(p_stdin[1]);
       } else {
         *infp = p_stdin[1];
       }
-      if (outfp == nullptr) {
+      if (!outfp) {
         close(p_stdout[0]);
       } else {
         *outfp = p_stdout[0];
