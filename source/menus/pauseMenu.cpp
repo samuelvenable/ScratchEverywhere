@@ -17,6 +17,8 @@ static std::string getTurboString() {
 }
 
 void PauseMenu::init() {
+    constexpr int buttons = 4;
+    constexpr int space = (180 - 60) / buttons;
 
     pauseControl = new ControlObject();
     backButton = new ButtonObject("", "gfx/menu/buttonBack.svg", 375, 20, "gfx/menu/Ubuntu-Bold");
@@ -24,13 +26,13 @@ void PauseMenu::init() {
     exitProjectButton = new ButtonObject(TranslationManager::getTranslation("ui.pause.exit"), "gfx/menu/projectBox.svg", 200, 60, "gfx/menu/Ubuntu-Bold", true);
     exitProjectButton->text->setColor(Math::color(0, 0, 0, 255));
 
-    flagButton = new ButtonObject(TranslationManager::getTranslation("ui.pause.flag"), "gfx/menu/projectBox.svg", 200, 100, "gfx/menu/Ubuntu-Bold", true);
+    flagButton = new ButtonObject(TranslationManager::getTranslation("ui.pause.flag"), "gfx/menu/projectBox.svg", 200, 60 + space, "gfx/menu/Ubuntu-Bold", true);
     flagButton->text->setColor(Math::color(0, 0, 0, 255));
 
-    stopButton = new ButtonObject(TranslationManager::getTranslation("ui.pause.stop"), "gfx/menu/projectBox.svg", 200, 140, "gfx/menu/Ubuntu-Bold", true);
+    stopButton = new ButtonObject(TranslationManager::getTranslation("ui.pause.stop"), "gfx/menu/projectBox.svg", 200, 60 + space * 2, "gfx/menu/Ubuntu-Bold", true);
     stopButton->text->setColor(Math::color(0, 0, 0, 255));
 
-    turboButton = new ButtonObject(getTurboString(), "gfx/menu/projectBox.svg", 200, 180, "gfx/menu/Ubuntu-Bold", true);
+    turboButton = new ButtonObject(getTurboString(), "gfx/menu/projectBox.svg", 200, 60 + space * 3, "gfx/menu/Ubuntu-Bold", true);
     turboButton->text->setColor(Math::color(0, 0, 0, 255));
 
     backButton->needsToBeSelected = false;
@@ -50,6 +52,7 @@ void PauseMenu::init() {
 
     stopButton->buttonDown = turboButton;
     turboButton->buttonUp = stopButton;
+
     isInitialized = true;
 }
 

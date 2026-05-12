@@ -23,6 +23,7 @@
   "ui.settings.music": "Музыка",
   "ui.settings.cache": "Очистить кеш",
   "ui.settings.language": "Язык",
+  "ui.settings.dectalk": "Использ. DECtalk",
   "ui.unpack.wait": "Пожалуйста, подождите.",
   "ui.unpack.warning": "Не выключайте устройство!",
   "ui.pause.exit": "Выйти в меню",

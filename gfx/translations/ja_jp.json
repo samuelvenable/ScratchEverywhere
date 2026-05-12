@@ -23,6 +23,7 @@
   "ui.settings.music": "メニュー音楽",
   "ui.settings.cache": "キャッシュを削除する",
   "ui.settings.language": "言語",
+  "ui.settings.dectalk": "DECtalkを使用する",
   "ui.unpack.wait": "少し待ってください",
   "ui.unpack.warning": "デバイスの電源を切らないでください",
   "ui.pause.exit": "プロジェクトを終了する",

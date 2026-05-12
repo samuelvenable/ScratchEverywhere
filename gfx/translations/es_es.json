@@ -23,6 +23,7 @@
   "ui.settings.music": "Música del menú",
   "ui.settings.cache": "Limpiar caché",
   "ui.settings.language": "Idioma",
+  "ui.settings.dectalk": "Usar DECtalk",
   "ui.unpack.wait": "Espere un momento",
   "ui.unpack.warning": "No apague su dispositivo",
   "ui.pause.exit": "Salir del proyecto",
