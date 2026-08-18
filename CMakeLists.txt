@@ -114,7 +114,7 @@ else()
 endif()
 
 #  disable menu if a project is in RomFS
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/romfs/project" OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/romfs/project.sb3" OR LIBRETRO)
+if(SE_USE_LIBRARY_BUILD OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/romfs/project" OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/romfs/project.sb3" OR LIBRETRO)
 	set(SE_MENU OFF)
 	set(SE_LOADSCREEN OFF)
 endif()
@@ -280,15 +280,24 @@ endif()
 
 add_library(se-interface INTERFACE)
 if(SE_EXECUTABLE)
+	if(APPLE)
+		set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/source/main.cpp" PROPERTIES COMPILE_FLAGS "-x objective-c++")
+	endif()
 	if(LIBRETRO)
 		add_library(scratch-everywhere SHARED ${SOURCE_FILES})
-		set_target_properties(scratch-everywhere PROPERTIES PREFIX "")
+		set_target_properties(scratch-everywhere PROPERTIES PREFIX "" OUTPUT_NAME "${SE_OUTPUT_NAME}")
 		se_add_dependency(scratch-everywhere libretro)
 	else()
-		add_executable(scratch-everywhere WIN32 ${SOURCE_FILES})
+		if(SE_USE_LIBRARY_BUILD)
+			add_library(scratch-everywhere SHARED ${SOURCE_FILES})
+			target_compile_definitions(scratch-everywhere PUBLIC SE_USE_LIBRARY_BUILD)
+			set_target_properties(scratch-everywhere PROPERTIES PREFIX "lib" OUTPUT_NAME "scratch")
+		else()
+			add_executable(scratch-everywhere WIN32 ${SOURCE_FILES})
+			set_target_properties(scratch-everywhere PROPERTIES OUTPUT_NAME "${SE_OUTPUT_NAME}")
+		endif()
 	endif()
 
-	set_target_properties(scratch-everywhere PROPERTIES OUTPUT_NAME "${SE_OUTPUT_NAME}")
 	target_link_libraries(scratch-everywhere PRIVATE se-interface)
 
 	if(SE_ASAN)
@@ -455,7 +464,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS")
 endif()
 
 if(SE_CUSTOM_EXTENSIONS)
-	se_add_dependency(se-interface lua51) # No idea why i fucking need this, it should be handled by sol2.cmake but it wasn't working with the system deps so...
+	se_add_dependency(se-interface lua51) # No idea why i need this, it should be handled by sol2.cmake but it wasn't working with the system deps so...
 	se_add_dependency(se-interface sol2)
 endif()
 
