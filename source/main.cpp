@@ -335,6 +335,8 @@ extern "C" __attribute__((visibility("default"))) char *scratch_everywhere_creat
 		while (true) {
 			std::pair<bool, bool> code = Scratch::stepScratchProject(monitorDisplayThread);
     		if (!code.first) {
+				exitApp();
+				exit(0);
 				break;
 			}
 		}
