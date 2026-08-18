@@ -71,6 +71,7 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_destro
     Scratch::cleanupScratchProject();
     Render::deInit();
     OS::deinit();
+	exit(0);
 }
 /**
  * I returned a string split by a colon delimiter character 
@@ -335,6 +336,7 @@ extern "C" __attribute__((visibility("default"))) char *scratch_everywhere_creat
 		while (true) {
 			std::pair<bool, bool> code = Scratch::stepScratchProject(monitorDisplayThread);
     		if (!code.first) {
+				Scratch::cleanupScratchProject();
 				exitApp();
 				exit(0);
 				break;
