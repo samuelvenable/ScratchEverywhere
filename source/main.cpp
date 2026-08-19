@@ -52,6 +52,7 @@ static void exitApp() {
 #if defined(SE_USE_LIBRARY_BUILD)
 bool scratch_everywhere_is_blocking = false;
 std::string scratch_everywhere_parent_window_string = "0";
+#if defined(USE_LIBDLGMOD)
 #if defined(_WIN32) || defined(_WIN64)
 WNDPROC OriginalWndProc = nullptr;
 LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -75,7 +76,7 @@ LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
     }
     return CallWindowProc(OriginalWndProc, hwnd, msg, wParam, lParam);
 }
-#elif defined(__APPLE__) && defined(USE_LIBDLGMOD)
+#elif defined(__APPLE__)
 @interface WindowDelegate : NSObject <NSWindowDelegate>
 @end
 @implementation WindowDelegate
@@ -87,6 +88,7 @@ LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
 	return YES;
 }
 @end
+#endif
 #endif
 #if defined(_WIN32) || defined(_WIN64)
 extern "C" __declspec(dllexport) void scratch_everywhere_destroy() {
