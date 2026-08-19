@@ -166,10 +166,10 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_pa
 	SetWindowLongPtrW(scratch_everywhere_window, GWL_STYLE, GetWindowLongPtrW(scratch_everywhere_window, GWL_STYLE) & ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU | WS_POPUP));
 	SetWindowLongPtrW(scratch_everywhere_window, GWL_EXSTYLE, GetWindowLongPtrW(scratch_everywhere_window, GWL_EXSTYLE) & ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
     SetWindowPos(scratch_everywhere_parent_window, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED); SetWindowPos(scratch_everywhere_window, 
-	nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);SetParent(scratch_everywhere_window, scratch_everywhere_parent_window); RECT rect; 
-	GetClientRect(scratch_everywhere_parent_window, &rect); int borderHeight = (GetSystemMetrics(SM_CYSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER)); int titleHeight = 
-	(GetSystemMetrics(SM_CYCAPTION) + GetSystemMetrics(SM_CXPADDEDBORDER)); int borderWidth = (GetSystemMetrics(SM_CXSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER)); 
-	MoveWindow(scratch_everywhere_window, - (borderWidth * 2), - ((titleHeight + borderHeight ) / 2), (rect.right - rect.left), (rect.bottom - rect.top), TRUE); 
+	nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED); SetParent(scratch_everywhere_window, scratch_everywhere_parent_window);
+	TITLEBARINFOEX titleBarInfo = { 0 }; titleBarInfo.cbSize = sizeof(TITLEBARINFOEX); GetTitleBarInfo(scratch_everywhere_parent_window, &titleBarInfo); RECT rect;
+	GetClientRect(scratch_everywhere_parent_window, &rect); MoveWindow(scratch_everywhere_window, 0, 0, (rect.right - rect.left) - (titleBarInfo.rcTitleBar.right -
+	titleBarInfo.rcTitleBar.left), (rect.bottom - rect.top) - (titleBarInfo.rcTitleBar.bottom - titleBarInfo.rcTitleBar.top), TRUE); 
 	OriginalWndProc = (WNDPROC)SetWindowLongPtrW(scratch_everywhere_parent_window, GWLP_WNDPROC, (LONG_PTR)CustomWndProc);
 #elif defined(__APPLE__)
 	// On macOS the OS is so locked-down that this only works for windows belonging to the same process:
