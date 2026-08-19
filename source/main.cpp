@@ -160,7 +160,7 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_pa
 #if defined(USE_LIBDLGMOD)
 #if defined(_WIN32) || defined(_WIN64)
 	HWND scratch_everywhere_window = (HWND)(void *)strtoull(widget_get_owner(), nullptr, 10);
-	HWND scratch_everywhere_parent_window = (HWND)(void *)strtoull(window.c_str(), nullptr, 10);
+	HWND scratch_everywhere_parent_window = (HWND)(void *)strtoull(window, nullptr, 10);
     if (IsIconic(scratch_everywhere_parent_window)) ShowWindow(scratch_everywhere_parent_window, SW_RESTORE);
 	SetWindowLongPtrW(scratch_everywhere_window, GWLP_HWNDPARENT, (LONG_PTR)(void *)scratch_everywhere_parent_window);
     SetWindowLongPtrW(scratch_everywhere_parent_window, GWL_STYLE, (GetWindowLongPtrW(scratch_everywhere_parent_window, GWL_STYLE) | WS_CLIPCHILDREN | WS_CLIPSIBLINGS) & ~(WS_THICKFRAME | WS_MAXIMIZEBOX));
@@ -174,7 +174,7 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_pa
 #elif defined(__APPLE__)
 	// On macOS the OS is so locked-down that this only works for windows belonging to the same process:
 	NSWindow *scratch_everywhere_window = (NSWindow *)(void *)strtoull(widget_get_owner(), nullptr, 10);
-	NSWindow *scratch_everywhere_parent_window = (NSWindow *)(void *)strtoull(window.c_str(), nullptr, 10);
+	NSWindow *scratch_everywhere_parent_window = (NSWindow *)(void *)strtoull(window, nullptr, 10);
 	[scratch_everywhere_parent_window addChildWindow:scratch_everywhere_window ordered:NSWindowAbove];
 	[scratch_everywhere_window setStyleMask:NSWindowStyleMaskBorderless]; NSEvent *event = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDown location:
 	NSMakePoint(scratch_everywhere_window.frame.size.width / 2, scratch_everywhere_window.frame.size.height / 2) modifierFlags:0 timestamp:0 windowNumber:
@@ -190,7 +190,7 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_pa
   	XSetErrorHandler(XErrorHandlerImpl); XSetIOErrorHandler(XIOErrorHandlerImpl); 
     Display *display = XOpenDisplay(nullptr); Window scratch_everywhere_window = 
     (Window)strtoul(widget_get_owner(), nullptr, 10); Window scratch_everywhere_parent_window = 
-    (Window)strtoul(window.c_str(), nullptr, 10); XSetTransientForHint(display, scratch_everywhere_window, 
+    (Window)strtoul(window, nullptr, 10); XSetTransientForHint(display, scratch_everywhere_window, 
     scratch_everywhere_parent_window); XReparentWindow(display, scratch_everywhere_window, 
     scratch_everywhere_parent_window, 0, 0); XWindowAttributes attr; XGetWindowAttributes(display, 
     scratch_everywhere_parent_window, &attr); XResizeWindow(display, scratch_everywhere_window, attr.width, 
