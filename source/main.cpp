@@ -271,7 +271,7 @@ void mainLoop() {
 }
 
 #if !defined(SE_USE_LIBRARY_BUILD)
-#if defined(WINDOWINSDL1) || defined(WINDOWINSDL2)
+#if defined(WINDOWING_SDL1) || defined(WINDOWING_SDL2)
 #include <SDL.h>
 
 extern "C" int main(int argc, char **argv) {
@@ -337,7 +337,7 @@ extern "C" __attribute__((visibility("default"))) char *scratch_everywhere_creat
         if (Unzip::projectOpened == -3) {
 #ifdef __EMSCRIPTEN__
             bool uploadComplete = false;
-            emscripten_browser_file::upload(".sb3", [](std::string const &filename, std::string const &mime_type, std::strinview buffer, void *userdata) {
+            emscripten_browser_file::upload(".sb3", [](std::string const &filename, std::string const &mime_type, std::string_view buffer, void *userdata) {
                 *(bool *)userdata = true;
                 if (!FileSystem::fileExists(OS::getScratchFolderLocation())) FileSystem::createDirectory(OS::getScratchFolderLocation());
                 std::ofstream f(OS::getScratchFolderLocation() + filename);
