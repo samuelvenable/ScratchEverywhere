@@ -197,6 +197,7 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_pa
     attr.height); XSizeHints *sh = XAllocSizeHints(); sh->flags = PMinSize | PMaxSize; sh->min_width = 
     sh->max_width = attr.width; sh->min_height = sh->max_height = attr.height; XSetWMNormalHints(display, 
     scratch_everywhere_parent_window, sh); XFree(sh); XCloseDisplay(display);
+	// FIXME: This is too much work to rewrite in Wayland (might do later)...
 #endif
 #endif
 }
