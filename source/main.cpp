@@ -239,13 +239,13 @@ int main(int argc, char **argv) {
 #endif
 #else
 #if defined(_WIN32) || defined(_WIN64)
-extern "C" __declspec(dllexport) const char *scratch_everywhere_create(const char *sb3, const char *win) {
+extern "C" __declspec(dllexport) const char *scratch_everywhere_create(const char *sb3, const char *title, const char *window) {
 #else
-extern "C" __attribute__((visibility("default"))) const char *scratch_everywhere_create(const char *sb3, const char *win) {
+extern "C" __attribute__((visibility("default"))) const char *scratch_everywhere_create(const char *sb3, const char *title, const char *window) {
 #endif
 #endif
 #if defined(SE_USE_LIBRARY_BUILD) && defined(USE_LIBDLGMOD)
-    if (!initApp(640, 480, false, "Scratch Everywhere!")) {
+    if (!initApp(640, 480, false, title)) {
 #else
     if (!initApp(-1, -1, true, "Scratch Everywhere!")) {
 #endif
