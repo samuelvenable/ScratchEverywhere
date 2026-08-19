@@ -128,8 +128,8 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_pa
 	SetWindowLongPtrW(scratch_everywhere_window, GWL_EXSTYLE, GetWindowLongPtrW(scratch_everywhere_window, GWL_EXSTYLE) & ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
     SetWindowLongPtrW(scratch_everywhere_parent_window, GWL_STYLE, GetWindowLongPtrW(scratch_everywhere_parent_window, GWL_STYLE) & ~(WS_THICKFRAME | WS_MAXIMIZEBOX));
 	RECT rect; GetWindowRect(scratch_everywhere_parent_window, &rect); SetParent(scratch_everywhere_window, scratch_everywhere_parent_window);
-	SetWindowPos(scratch_everywhere_window, nullptr, 0, 0, rect.right, rect.bottom, SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOOWNERZORDER);
-    SetWindowPos(scratch_everywhere_parent_window, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+	SetWindowPos(scratch_everywhere_window, nullptr, rect.left, rec.top, rect.right, rect.bottom, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+    SetWindowPos(scratch_everywhere_parent_window, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 #elif defined(__APPLE__)
 	NSWindow *scratch_everywhere_window = (NSWindow *)(void *)strtoull(widget_get_owner(), nullptr, 10);
 	NSWindow *scratch_everywhere_parent_window = (NSWindow *)(void *)strtoull(window, nullptr, 10);
