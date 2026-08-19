@@ -38,6 +38,7 @@
 #include <AppKit/AppKit.h>
 #else
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #endif
 #endif
 static ScriptThread monitorDisplayThread;
