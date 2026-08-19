@@ -53,24 +53,25 @@ static void exitApp() {
 bool scratch_everywhere_is_blocking = false;
 std::string scratch_everywhere_parent_window_string = "0";
 #if defined(USE_LIBDLGMOD)
+#if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__)
+static void scratchEverywhereCleanUp() {
+    Scratch::cleanupScratchProject();
+    Render::deInit();
+    OS::deinit();
+    exit(0);
+}
 #if defined(_WIN32) || defined(_WIN64)
-WNDPROC OriginalWndProc = nullptr;
+static WNDPROC OriginalWndProc = nullptr;
 LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
     case WM_SYSCOMMAND:
         if ((wParam & 0xFFF0) == SC_CLOSE) {
-            Scratch::cleanupScratchProject();
-            Render::deInit();
-            OS::deinit();
-	        exit(0);
+            scratchEverywhereCleanUp();
             return 0;
         }
         break;
     case WM_CLOSE:
-        Scratch::cleanupScratchProject();
-        Render::deInit();
-        OS::deinit();
-	    exit(0);
+        scratchEverywhereCleanUp();
         return 0;
         break;
     }
@@ -81,13 +82,11 @@ LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
 @end
 @implementation WindowDelegate
 - (BOOL)windowShouldClose:(id)sender {
-    Scratch::cleanupScratchProject();
-    Render::deInit();
-    OS::deinit();
-	exit(0);
+    scratchEverywhereCleanUp();
 	return YES;
 }
 @end
+#endif
 #endif
 #endif
 #if defined(_WIN32) || defined(_WIN64)
@@ -168,9 +167,10 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_pa
 	SetWindowLongPtrW(scratch_everywhere_window, GWL_EXSTYLE, GetWindowLongPtrW(scratch_everywhere_window, GWL_EXSTYLE) & ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
     SetWindowPos(scratch_everywhere_parent_window, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 	SetWindowPos(scratch_everywhere_window, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
-	RECT rect; GetClientRect(scratch_everywhere_parent_window, &rect); SetParent(scratch_everywhere_window, scratch_everywhere_parent_window);
+	SetParent(scratch_everywhere_window, scratch_everywhere_parent_window); RECT rect; GetClientRect(scratch_everywhere_parent_window, &rect);
+    int halfTitleBarHeight = ((GetSystemMetrics(SM_CYCAPTION) + GetSystemMetrics(SM_CYSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER)) / 2);
+    MoveWindow(scratch_everywhere_window, 0, -halfTitleBarHeight, (rect.right - rect.left), (rect.bottom - rect.top), TRUE); 
     OriginalWndProc = (WNDPROC)SetWindowLongPtrW(scratch_everywhere_parent_window, GWLP_WNDPROC, (LONG_PTR)CustomWndProc);
-    MoveWindow(scratch_everywhere_window, 0, 0, rect.right, rect.bottom, TRUE);
 #elif defined(__APPLE__)
 	// On macOS the OS is so locked-down that this only works for windows belonging to the same process:
 	NSWindow *scratch_everywhere_window = (NSWindow *)(void *)strtoull(widget_get_owner(), nullptr, 10);
@@ -271,7 +271,7 @@ void mainLoop() {
 }
 
 #if !defined(SE_USE_LIBRARY_BUILD)
-#if defined(WINDOWING_SDL1) || defined(WINDOWING_SDL2)
+#if defined(WINDOWINSDL1) || defined(WINDOWINSDL2)
 #include <SDL.h>
 
 extern "C" int main(int argc, char **argv) {
@@ -337,7 +337,7 @@ extern "C" __attribute__((visibility("default"))) char *scratch_everywhere_creat
         if (Unzip::projectOpened == -3) {
 #ifdef __EMSCRIPTEN__
             bool uploadComplete = false;
-            emscripten_browser_file::upload(".sb3", [](std::string const &filename, std::string const &mime_type, std::string_view buffer, void *userdata) {
+            emscripten_browser_file::upload(".sb3", [](std::string const &filename, std::string const &mime_type, std::strinview buffer, void *userdata) {
                 *(bool *)userdata = true;
                 if (!FileSystem::fileExists(OS::getScratchFolderLocation())) FileSystem::createDirectory(OS::getScratchFolderLocation());
                 std::ofstream f(OS::getScratchFolderLocation() + filename);
