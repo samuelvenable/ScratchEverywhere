@@ -6,8 +6,6 @@ if(APPLE)
 	enable_language(OBJC)
 endif()
 
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 # error C7555: use of designated initializers requires at least '/std:c++20'
 if(MSVC)
 	set(CMAKE_CXX_STANDARD 20)
