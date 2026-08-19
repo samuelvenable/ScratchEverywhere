@@ -147,7 +147,7 @@ static void scratchEverywhereEmbedInParentWindow(std::string window) {
 	WindowDelegate *delegate = [[WindowDelegate alloc] init];
 	[scratch_everywhere_parent_window setDelegate:delegate];
 #elif __has_include(<X11/Xlib.h>) && __has_include(<X11/Xutil.h>)
-    if (!window.empty() && !window.compare("0") && isdigit(window[0])) return;
+    if (window.empty() || !window.compare("0") || !isdigit(window[0])) return;
     // Error handlers force ignored failures on Wayland, thus avoiding segfaults:
   	XSetErrorHandler(XErrorHandlerImpl); XSetIOErrorHandler(XIOErrorHandlerImpl); 
     Display *display = XOpenDisplay(nullptr); Window scratch_everywhere_window = 
