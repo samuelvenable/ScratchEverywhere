@@ -123,10 +123,10 @@ static void scratchEverywhereEmbedInParentWindow(std::string window) {
 	HWND scratch_everywhere_parent_window = (HWND)(void *)strtoull(window.c_str(), nullptr, 10);
     if (IsIconic(scratch_everywhere_parent_window)) ShowWindow(scratch_everywhere_parent_window, SW_RESTORE);
 	SetWindowLongPtrW(scratch_everywhere_window, GWLP_HWNDPARENT, (LONG_PTR)(void *)scratch_everywhere_parent_window);
-	RECT rect; GetClientRect(scratch_everywhere_parent_window, &rect); MoveWindow(scratch_everywhere_window, 0, 0, (rect.right - rect.left), (rect.bottom - rect.top), TRUE);
     SetWindowLongPtrW(scratch_everywhere_parent_window, GWL_STYLE, (GetWindowLongPtrW(scratch_everywhere_parent_window, GWL_STYLE) | WS_CLIPCHILDREN | WS_CLIPSIBLINGS) & ~(WS_THICKFRAME | WS_MAXIMIZEBOX));
 	SetWindowLongPtrW(scratch_everywhere_window, GWL_STYLE, (GetWindowLongPtrW(scratch_everywhere_window, GWL_STYLE) | WS_POPUP) & ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU));
 	SetWindowLongPtrW(scratch_everywhere_window, GWL_EXSTYLE, GetWindowLongPtrW(scratch_everywhere_window, GWL_EXSTYLE) & ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
+	RECT rect; GetClientRect(scratch_everywhere_parent_window, &rect); MoveWindow(scratch_everywhere_window, 0, 0, (rect.right - rect.left), (rect.bottom - rect.top), TRUE);
     SetWindowPos(scratch_everywhere_parent_window, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED); 
 	SetWindowPos(scratch_everywhere_window, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 	OriginalWndProc = (WNDPROC)SetWindowLongPtrW(scratch_everywhere_parent_window, GWLP_WNDPROC, (LONG_PTR)CustomWndProc);
