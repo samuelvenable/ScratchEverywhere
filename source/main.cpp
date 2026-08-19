@@ -32,6 +32,7 @@
 #if !defined(USE_LIBDLGMOD)
 #define USE_LIBDLGMOD
 #endif
+#include <cctype>
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #elif defined(__APPLE__)
@@ -50,10 +51,7 @@ static void exitApp() {
 }
 
 #if defined(SE_USE_LIBRARY_BUILD)
-bool scratch_everywhere_is_blocking = false;
-std::string scratch_everywhere_parent_window_string = "0";
 #if defined(USE_LIBDLGMOD)
-#if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__)
 static void scratchEverywhereCleanUp() {
     Scratch::cleanupScratchProject();
     Render::deInit();
@@ -88,36 +86,24 @@ LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
 @end
 #endif
 #endif
-#endif
 #if defined(_WIN32) || defined(_WIN64)
 extern "C" __declspec(dllexport) void scratch_everywhere_destroy() {
 #else
 extern "C" __attribute__((visibility("default"))) void scratch_everywhere_destroy() {
 #endif
-    Scratch::cleanupScratchProject();
-    Render::deInit();
-    OS::deinit();
-	exit(0);
+    scratchEverywhereCleanUp();
 }
-/**
- * I returned a string split by a colon delimiter character 
- * because I intend to use this in GameMaker as a GameMaker
- * extension. GameMaker extension functions can only return
- * double, char *, or void. If you want to change the types
- * here, please let me know before you change this behavior
- * -- "samuelvenable" a.k.a. "high on tantor" on github.com
- */
 #if defined(_WIN32) || defined(_WIN64)
-extern "C" __declspec(dllexport) char *scratch_everywhere_step() {
+extern "C" __declspec(dllexport) const char *scratch_everywhere_step() {
 #else
-extern "C" __attribute__((visibility("default"))) char *scratch_everywhere_step() {
+extern "C" __attribute__((visibility("default"))) const char *scratch_everywhere_step() {
 #endif
     static char buffer[4];
     std::pair<bool, bool> code = Scratch::stepScratchProject(monitorDisplayThread);
     const int first  = ((code.first)  ? 1 : 0);
     const int second = ((code.second) ? 1 : 0);
     snprintf(buffer, sizeof(buffer), "%d:%d", first, second);
-    return (char *)buffer;
+    return static_cast<const char *>buffer;
 }
 #if defined(USE_LIBDLGMOD)
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
@@ -129,37 +115,11 @@ static int XIOErrorHandlerImpl(Display *display) {
 }
 #endif
 #endif
-#if defined(_WIN32) || defined(_WIN64)
-extern "C" __declspec(dllexport) double scratch_everywhere_get_is_blocking() {
-#else
-extern "C" __attribute__((visibility("default"))) double scratch_everywhere_get_is_blocking() {
-#endif
-	return scratch_everywhere_is_blocking;
-}
-#if defined(_WIN32) || defined(_WIN64)
-extern "C" __declspec(dllexport) void scratch_everywhere_set_is_blocking(double blocking) {
-#else
-extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_is_blocking(double blocking) {
-#endif
-	scratch_everywhere_is_blocking = (bool)(int)blocking;
-}
-#if defined(_WIN32) || defined(_WIN64)
-extern "C" __declspec(dllexport) char *scratch_everywhere_get_parent_window() {
-#else
-extern "C" __attribute__((visibility("default"))) char *scratch_everywhere_get_parent_window() {
-#endif
-	return (char *)scratch_everywhere_parent_window_string.c_str();
-}
-#if defined(_WIN32) || defined(_WIN64)
-extern "C" __declspec(dllexport) void scratch_everywhere_set_parent_window(char *window) {
-#else
-extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_parent_window(char *window) {
-#endif
-	scratch_everywhere_parent_window_string = window;
+static void scratchEverywhereEmbedInParentWindow(std::string window) {
 #if defined(USE_LIBDLGMOD)
 #if defined(_WIN32) || defined(_WIN64)
 	HWND scratch_everywhere_window = (HWND)(void *)strtoull(widget_get_owner(), nullptr, 10);
-	HWND scratch_everywhere_parent_window = (HWND)(void *)strtoull(window, nullptr, 10);
+	HWND scratch_everywhere_parent_window = (HWND)(void *)strtoull(window.c_str(), nullptr, 10);
     if (IsIconic(scratch_everywhere_parent_window)) ShowWindow(scratch_everywhere_parent_window, SW_RESTORE);
 	SetWindowLongPtrW(scratch_everywhere_window, GWLP_HWNDPARENT, (LONG_PTR)(void *)scratch_everywhere_parent_window);
 	RECT rect; GetClientRect(scratch_everywhere_parent_window, &rect); MoveWindow(scratch_everywhere_window, 0, 0, (rect.right - rect.left), (rect.bottom - rect.top), TRUE);
@@ -173,7 +133,7 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_pa
 #elif defined(__APPLE__)
 	// On macOS the OS is so locked-down that this only works for windows belonging to the same process:
 	NSWindow *scratch_everywhere_window = (NSWindow *)(void *)strtoull(widget_get_owner(), nullptr, 10);
-	NSWindow *scratch_everywhere_parent_window = (NSWindow *)(void *)strtoull(window, nullptr, 10);
+	NSWindow *scratch_everywhere_parent_window = (NSWindow *)(void *)strtoull(window.c_str(), nullptr, 10);
 	[scratch_everywhere_parent_window addChildWindow:scratch_everywhere_window ordered:NSWindowAbove];
 	[scratch_everywhere_window setStyleMask:NSWindowStyleMaskBorderless]; NSEvent *event = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDown location:
 	NSMakePoint(scratch_everywhere_window.frame.size.width / 2, scratch_everywhere_window.frame.size.height / 2) modifierFlags:0 timestamp:0 windowNumber:
@@ -189,14 +149,14 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_pa
   	XSetErrorHandler(XErrorHandlerImpl); XSetIOErrorHandler(XIOErrorHandlerImpl); 
     Display *display = XOpenDisplay(nullptr); Window scratch_everywhere_window = 
     (Window)strtoul(widget_get_owner(), nullptr, 10); Window scratch_everywhere_parent_window = 
-    (Window)strtoul(window, nullptr, 10); XSetTransientForHint(display, scratch_everywhere_window, 
+    (Window)strtoul(window.c_str(), nullptr, 10); XSetTransientForHint(display, scratch_everywhere_window, 
     scratch_everywhere_parent_window); XReparentWindow(display, scratch_everywhere_window, 
     scratch_everywhere_parent_window, 0, 0); XWindowAttributes attr; XGetWindowAttributes(display, 
     scratch_everywhere_parent_window, &attr); XResizeWindow(display, scratch_everywhere_window, attr.width, 
     attr.height); XSizeHints *sh = XAllocSizeHints(); sh->flags = PMinSize | PMaxSize; sh->min_width = 
     sh->max_width = attr.width; sh->min_height = sh->max_height = attr.height; XSetWMNormalHints(display, 
     scratch_everywhere_parent_window, sh); XFree(sh); XCloseDisplay(display);
-	// FIXME: This is too much work to rewrite in Wayland (might do later)...
+    // FIXME: This is too much work to rewrite in Wayland (might do later)...
 #endif
 #endif
 }
@@ -277,23 +237,14 @@ extern "C" int main(int argc, char **argv) {
 #else
 int main(int argc, char **argv) {
 #endif
-    if (!initApp(-1, -1, true, "Scratch Everywhere!")) {
 #else
-/**
- * I use double arguments for width / height instead of int 
- * because I intend to use this in GameMaker as a GameMaker
- * extension. GameMaker extension arguments are limited to: 
- * double, char *, or void. If you want to change the types
- * here, please let me know before you change this behavior
- * -- "samuelvenable" a.k.a. "high on tantor" on github.com
- */
 #if defined(_WIN32) || defined(_WIN64)
-extern "C" __declspec(dllexport) char *scratch_everywhere_create(char *sb3, double width, double height, char *title) {
+extern "C" __declspec(dllexport) const char *scratch_everywhere_create(const char *sb3, const char *win) {
 #else
-extern "C" __attribute__((visibility("default"))) char *scratch_everywhere_create(char *sb3, double width, double height, char *title) {
+extern "C" __attribute__((visibility("default"))) const char *scratch_everywhere_create(const char *sb3, const char *win) {
 #endif
-    if (!initApp((int)width, (int)height, false, title)) {
 #endif
+    if (!initApp(-1, -1, true, "Scratch Everywhere!")) {
 #if !defined(SE_USE_LIBRARY_BUILD)
         exitApp();
         return 1;
@@ -369,23 +320,14 @@ extern "C" __attribute__((visibility("default"))) char *scratch_everywhere_creat
     Unzip::load();
     Scratch::initializeScratchProject();
 #if defined(USE_LIBDLGMOD)
-	scratch_everywhere_set_parent_window((char *)scratch_everywhere_parent_window_string.c_str());
-#endif
-	if (scratch_everywhere_is_blocking) {
-		while (true) {
-			std::pair<bool, bool> code = Scratch::stepScratchProject(monitorDisplayThread);
-    		if (!code.first) {
-				Scratch::cleanupScratchProject();
-				exitApp();
-				exit(0);
-				break;
-			}
-		}
+	if (!win.empty() && !win.compare("0") && isdigit(win[0])) {
+		scratchEverywhereEmbedInParentWindow(win);
 	}
+#endif
 #if defined(USE_LIBDLGMOD)
-	return (char *)widget_get_owner();
+	return widget_get_owner();
 #else
-	return (char *)"0";
+	return "0";
 #endif
 #else
 #ifdef __EMSCRIPTEN__
