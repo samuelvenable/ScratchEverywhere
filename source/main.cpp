@@ -168,9 +168,9 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_pa
     SetWindowPos(scratch_everywhere_parent_window, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 	SetWindowPos(scratch_everywhere_window, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 	SetParent(scratch_everywhere_window, scratch_everywhere_parent_window); RECT rect; GetClientRect(scratch_everywhere_parent_window, &rect);
-    int borderHeight = (GetSystemMetrics(SM_CYSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER)); int titleHeight = (GetSystemMetrics(SM_CYCAPTION) +
-	borderHeight); int borderWidth = (GetSystemMetrics(SM_CXSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER)); MoveWindow(scratch_everywhere_window,
-	- (borderWidth * 2), - ((titleHeight / 2) - borderHeight), (rect.right - rect.left), (rect.bottom - rect.top), TRUE); OriginalWndProc = 
+    int borderHeight = (GetSystemMetrics(SM_CYSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER)); int titleHeight = GetSystemMetrics(SM_CYCAPTION); 
+	int borderWidth = (GetSystemMetrics(SM_CXSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER)); MoveWindow(scratch_everywhere_window,
+	- (borderWidth * 2), - ((titleHeight / 2) - borderHeight * 2), (rect.right - rect.left), (rect.bottom - rect.top), TRUE); OriginalWndProc = 
 	(WNDPROC)SetWindowLongPtrW(scratch_everywhere_parent_window, GWLP_WNDPROC, (LONG_PTR)CustomWndProc);
 #elif defined(__APPLE__)
 	// On macOS the OS is so locked-down that this only works for windows belonging to the same process:
