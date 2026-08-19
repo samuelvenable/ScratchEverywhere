@@ -168,8 +168,8 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_pa
     SetWindowPos(scratch_everywhere_parent_window, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED); SetWindowPos(scratch_everywhere_window, 
 	nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED); SetParent(scratch_everywhere_window, scratch_everywhere_parent_window);
 	TITLEBARINFOEX titleBarInfo = { 0 }; titleBarInfo.cbSize = sizeof(TITLEBARINFOEX); SendMessage(scratch_everywhere_parent_window, WM_GETTITLEBARINFOEX, 0, (LPARAM)&titleBarInfo); 
-	RECT rect; GetClientRect(scratch_everywhere_parent_window, &rect); MoveWindow(scratch_everywhere_window, 0, 0, (rect.right - rect.left) - (titleBarInfo.rcTitleBar.right -
-	titleBarInfo.rcTitleBar.left), (rect.bottom - rect.top) - (titleBarInfo.rcTitleBar.bottom - titleBarInfo.rcTitleBar.top), TRUE); 
+	RECT rect; GetClientRect(scratch_everywhere_parent_window, &rect); MoveWindow(scratch_everywhere_window, 0, - ((titleBarInfo.rcTitleBar.bottom - titleBarInfo.rcTitleBar.top) / 2), 
+	(rect.right - rect.left) - (titleBarInfo.rcTitleBar.right - titleBarInfo.rcTitleBar.left), (rect.bottom - rect.top) - (titleBarInfo.rcTitleBar.bottom - titleBarInfo.rcTitleBar.top), TRUE); 
 	OriginalWndProc = (WNDPROC)SetWindowLongPtrW(scratch_everywhere_parent_window, GWLP_WNDPROC, (LONG_PTR)CustomWndProc);
 #elif defined(__APPLE__)
 	// On macOS the OS is so locked-down that this only works for windows belonging to the same process:
