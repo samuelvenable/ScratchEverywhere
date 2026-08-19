@@ -56,18 +56,6 @@ extern "C" __declspec(dllexport) void scratch_everywhere_destroy() {
 #else
 extern "C" __attribute__((visibility("default"))) void scratch_everywhere_destroy() {
 #endif
-#if defined(USE_LIBDLGMOD)
-#if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__)
-	void *parent = (void *)strtoull(scratch_everywhere_parent_window_string.c_str(), nullptr, 10);
-	if (parent) {
-#if defined(_WIN32) || defined(_WIN64)
-		EnableWindow((HWND)parent, TRUE);
-#elif defined(__APPLE__)
-		[[(NSWindow *)parent standardWindowButton:NSWindowCloseButton] setEnabled:YES];
-#endif
-	}
-#endif
-#endif
     Scratch::cleanupScratchProject();
     Render::deInit();
     OS::deinit();
@@ -136,6 +124,12 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_pa
 	HWND scratch_everywhere_parent_window = (HWND)(void *)strtoull(window, nullptr, 10);
     if (IsIconic(scratch_everywhere_parent_window)) ShowWindow(scratch_everywhere_parent_window, SW_RESTORE);
 	SetWindowLongPtrW(scratch_everywhere_window, GWLP_HWNDPARENT, (LONG_PTR)(void *)scratch_everywhere_parent_window);
+	SetWindowLongPtrW(scratch_everywhere_window, GWL_STYLE, (GetWindowLongPtrW(scratch_everywhere_window, GWL_STYLE) | WS_CHILD) & ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU | WS_POPUP));
+	SetWindowLongPtrW(scratch_everywhere_window, GWL_EXSTYLE, GetWindowLongPtrW(scratch_everywhere_window, GWL_EXSTYLE) & ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
+    SetWindowLongPtrW(scratch_everywhere_parent_window, GWL_STYLE, GetWindowLongPtrW(scratch_everywhere_parent_window, GWL_STYLE) & ~(WS_THICKFRAME | WS_MAXIMIZEBOX));
+	RECT rect; GetWindowRect(scratch_everywhere_parent_window, &rect); SetParent(scratch_everywhere_window, scratch_everywhere_parent_window);
+	SetWindowPos(scratch_everywhere_window, nullptr, 0, 0, rect.right, rect.bottom, SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOOWNERZORDER);
+    SetWindowPos(scratch_everywhere_parent_window, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 #elif defined(__APPLE__)
 	NSWindow *scratch_everywhere_window = (NSWindow *)(void *)strtoull(widget_get_owner(), nullptr, 10);
 	NSWindow *scratch_everywhere_parent_window = (NSWindow *)(void *)strtoull(window, nullptr, 10);
@@ -320,16 +314,6 @@ extern "C" __attribute__((visibility("default"))) char *scratch_everywhere_creat
     Unzip::load();
     Scratch::initializeScratchProject();
 #if defined(USE_LIBDLGMOD)
-#if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__)
-	void *parent = (void *)strtoull(scratch_everywhere_parent_window_string.c_str(), nullptr, 10);
-	if (parent) {
-#if defined(_WIN32) || defined(_WIN64)
-		EnableWindow((HWND)parent, FALSE);
-#elif defined(__APPLE__)
-		[[(NSWindow *)parent standardWindowButton:NSWindowCloseButton] setEnabled:NO];
-#endif
-	}
-#endif
 	scratch_everywhere_set_parent_window((char *)scratch_everywhere_parent_window_string.c_str());
 #endif
 	if (scratch_everywhere_is_blocking) {
