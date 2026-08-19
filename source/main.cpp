@@ -103,7 +103,7 @@ extern "C" __attribute__((visibility("default"))) const char *scratch_everywhere
     const int first  = ((code.first)  ? 1 : 0);
     const int second = ((code.second) ? 1 : 0);
     snprintf(buffer, sizeof(buffer), "%d:%d", first, second);
-    return static_cast<const char *>buffer;
+    return static_cast<const char *>(buffer);
 }
 #if defined(USE_LIBDLGMOD)
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
@@ -118,6 +118,7 @@ static int XIOErrorHandlerImpl(Display *display) {
 static void scratchEverywhereEmbedInParentWindow(std::string window) {
 #if defined(USE_LIBDLGMOD)
 #if defined(_WIN32) || defined(_WIN64)
+	if (!window.empty() && window.compare("0") && isdigit(window[0])) return;
 	HWND scratch_everywhere_window = (HWND)(void *)strtoull(widget_get_owner(), nullptr, 10);
 	HWND scratch_everywhere_parent_window = (HWND)(void *)strtoull(window.c_str(), nullptr, 10);
     if (IsIconic(scratch_everywhere_parent_window)) ShowWindow(scratch_everywhere_parent_window, SW_RESTORE);
@@ -131,6 +132,7 @@ static void scratchEverywhereEmbedInParentWindow(std::string window) {
 	OriginalWndProc = (WNDPROC)SetWindowLongPtrW(scratch_everywhere_parent_window, GWLP_WNDPROC, (LONG_PTR)CustomWndProc);
 	SetParent(scratch_everywhere_window, scratch_everywhere_parent_window);
 #elif defined(__APPLE__)
+	if (!window.empty() && window.compare("0") && isdigit(window[0])) return;
 	// On macOS the OS is so locked-down that this only works for windows belonging to the same process:
 	NSWindow *scratch_everywhere_window = (NSWindow *)(void *)strtoull(widget_get_owner(), nullptr, 10);
 	NSWindow *scratch_everywhere_parent_window = (NSWindow *)(void *)strtoull(window.c_str(), nullptr, 10);
@@ -145,6 +147,7 @@ static void scratchEverywhereEmbedInParentWindow(std::string window) {
 	WindowDelegate *delegate = [[WindowDelegate alloc] init];
 	[scratch_everywhere_parent_window setDelegate:delegate];
 #elif __has_include(<X11/Xlib.h>) && __has_include(<X11/Xutil.h>)
+    if (!window.empty() && !window.compare("0") && isdigit(window[0])) return;
     // Error handlers force ignored failures on Wayland, thus avoiding segfaults:
   	XSetErrorHandler(XErrorHandlerImpl); XSetIOErrorHandler(XIOErrorHandlerImpl); 
     Display *display = XOpenDisplay(nullptr); Window scratch_everywhere_window = 
@@ -324,8 +327,8 @@ extern "C" __attribute__((visibility("default"))) const char *scratch_everywhere
     Unzip::load();
     Scratch::initializeScratchProject();
 #if defined(USE_LIBDLGMOD)
-	if (!win.empty() && !win.compare("0") && isdigit(win[0])) {
-		scratchEverywhereEmbedInParentWindow(win);
+	if (window) {
+		scratchEverywhereEmbedInParentWindow(window);
 	}
 #endif
 #if defined(USE_LIBDLGMOD)
