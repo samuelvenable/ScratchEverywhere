@@ -118,7 +118,7 @@ static int XIOErrorHandlerImpl(Display *display) {
 static void scratchEverywhereEmbedInParentWindow(std::string window) {
 #if defined(USE_LIBDLGMOD)
 #if defined(_WIN32) || defined(_WIN64)
-	if (!window.empty() && window.compare("0") && isdigit(window[0])) return;
+	if (window.empty() || !window.compare("0") || !isdigit(window[0])) return;
 	HWND scratch_everywhere_window = (HWND)(void *)strtoull(widget_get_owner(), nullptr, 10);
 	HWND scratch_everywhere_parent_window = (HWND)(void *)strtoull(window.c_str(), nullptr, 10);
     if (IsIconic(scratch_everywhere_parent_window)) ShowWindow(scratch_everywhere_parent_window, SW_RESTORE);
@@ -132,7 +132,7 @@ static void scratchEverywhereEmbedInParentWindow(std::string window) {
 	OriginalWndProc = (WNDPROC)SetWindowLongPtrW(scratch_everywhere_parent_window, GWLP_WNDPROC, (LONG_PTR)CustomWndProc);
 	SetParent(scratch_everywhere_window, scratch_everywhere_parent_window);
 #elif defined(__APPLE__)
-	if (!window.empty() && window.compare("0") && isdigit(window[0])) return;
+	if (window.empty() || !window.compare("0") || !isdigit(window[0])) return;
 	// On macOS the OS is so locked-down that this only works for windows belonging to the same process:
 	NSWindow *scratch_everywhere_window = (NSWindow *)(void *)strtoull(widget_get_owner(), nullptr, 10);
 	NSWindow *scratch_everywhere_parent_window = (NSWindow *)(void *)strtoull(window.c_str(), nullptr, 10);
