@@ -244,7 +244,7 @@ extern "C" __declspec(dllexport) const char *scratch_everywhere_create(const cha
 extern "C" __attribute__((visibility("default"))) const char *scratch_everywhere_create(const char *sb3, const char *title, const char *window) {
 #endif
 #endif
-#if defined(SE_USE_LIBRARY_BUILD) && defined(USE_LIBDLGMOD)
+#if defined(SE_USE_LIBRARY_BUILD)
     if (!initApp(640, 480, false, title)) {
 #else
     if (!initApp(-1, -1, true, "Scratch Everywhere!")) {
