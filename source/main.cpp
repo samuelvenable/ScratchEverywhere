@@ -134,6 +134,12 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_pa
 	NSWindow *scratch_everywhere_window = (NSWindow *)(void *)strtoull(widget_get_owner(), nullptr, 10);
 	NSWindow *scratch_everywhere_parent_window = (NSWindow *)(void *)strtoull(window, nullptr, 10);
 	[scratch_everywhere_parent_window addChildWindow:scratch_everywhere_window ordered:NSWindowAbove];
+	[scratch_everywhere_window setStyleMask:NSWindowStyleMaskBorderless]; NSEvent *event = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDown location:
+	NSMakePoint(scratch_everywhere_window.frame.size.width / 2, scratch_everywhere_window.frame.size.height / 2) modifierFlags:0 timestamp:0 windowNumber:
+	[scratch_everywhere_window windowNumber] context:nullptr eventNumber:0 clickCount:1 pressure:1.0]; [scratch_everywhere_window sendEvent:event];
+	[scratch_everywhere_window setFrame:[scratch_everywhere_parent_window frame] display:YES animate:NO];
+    [[scratch_everywhere_parent_window standardWindowButton:NSWindowZoomButton] setEnabled:NO];
+	scratch_everywhere_parent_window.styleMask &= ~NSWindowStyleMaskResizable;
 #else
   	XSetErrorHandler(XErrorHandlerImpl);
  	XSetIOErrorHandler(XIOErrorHandlerImpl);
