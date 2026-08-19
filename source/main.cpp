@@ -52,6 +52,19 @@ static void exitApp() {
 #if defined(SE_USE_LIBRARY_BUILD)
 bool scratch_everywhere_is_blocking = false;
 std::string scratch_everywhere_parent_window_string = "0";
+#if defined(__APPLE__) && defined(USE_LIBDLGMOD)
+@interface WindowDelegate : NSObject <NSWindowDelegate>
+@end
+@implementation WindowDelegate
+- (BOOL)windowShouldClose:(id)sender {
+    Scratch::cleanupScratchProject();
+    Render::deInit();
+    OS::deinit();
+	exit(0);
+	return YES;
+}
+@end
+#endif
 #if defined(_WIN32) || defined(_WIN64)
 extern "C" __declspec(dllexport) void scratch_everywhere_destroy() {
 #else
@@ -77,8 +90,8 @@ extern "C" __attribute__((visibility("default"))) char *scratch_everywhere_step(
 #endif
     static char buffer[4];
     std::pair<bool, bool> code = Scratch::stepScratchProject(monitorDisplayThread);
-    const int first  = code.first  ? 1 : 0;
-    const int second = code.second ? 1 : 0;
+    const int first  = ((code.first)  ? 1 : 0);
+    const int second = ((code.second) ? 1 : 0);
     snprintf(buffer, sizeof(buffer), "%d:%d", first, second);
     return static_cast<char *>(buffer);
 }
@@ -138,11 +151,12 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_pa
 	[scratch_everywhere_window setStyleMask:NSWindowStyleMaskBorderless]; NSEvent *event = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDown location:
 	NSMakePoint(scratch_everywhere_window.frame.size.width / 2, scratch_everywhere_window.frame.size.height / 2) modifierFlags:0 timestamp:0 windowNumber:
 	[scratch_everywhere_window windowNumber] context:nullptr eventNumber:0 clickCount:1 pressure:1.0]; [scratch_everywhere_window sendEvent:event];
-	NSRect contentRect = [scratch_everywhere_parent_window contentRectForFrameRect:[scratch_everywhere_parent_window frame]];
-	NSRect screenContentRect = [scratch_everywhere_parent_window convertRectToScreen:contentRect];
-	[scratch_everywhere_window setFrame:screenContentRect display:YES animate:NO]; 
+	NSPoint origin = scratch_everywhere_parent_window.frame.origin; NSSize size = scratch_everywhere_parent_window.contentView.bounds.size; 
+	[scratch_everywhere_window setFrame:NSMakeRect(origin.x, origin.y, size.width, size.height) display:YES animate:NO];
 	[[scratch_everywhere_parent_window standardWindowButton:NSWindowZoomButton] setEnabled:NO];
 	scratch_everywhere_parent_window.styleMask &= ~NSWindowStyleMaskResizable;
+	WindowDelegate *delegate = [[WindowDelegate alloc] init];
+	[scratch_everywhere_parent_window setDelegate:delegate];
 #else
   	XSetErrorHandler(XErrorHandlerImpl);
  	XSetIOErrorHandler(XIOErrorHandlerImpl);
