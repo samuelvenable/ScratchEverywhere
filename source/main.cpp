@@ -147,7 +147,14 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_pa
 	Window scratch_everywhere_window = (Window)strtoul(widget_get_owner(), nullptr, 10);
 	Window scratch_everywhere_parent_window = (Window)strtoul(window, nullptr, 10);
 	XSetTransientForHint(display, scratch_everywhere_window, scratch_everywhere_parent_window);
-	XCloseDisplay(display);
+	XReparentWindow(display, scratch_everywhere_window, scratch_everywhere_parent_window, 0, 0);
+	XWindowAttributes attr; XGetWindowAttributes(display, scratch_everywhere_parent_window, &attr);
+	XResizeWindow(display, scratch_everywhere_window, attr.width, attr.height);
+	XSizeHints *sh = XAllocSizeHints(); sh->flags = PMinSize | PMaxSize;
+	sh->min_width = sh->max_width = attr.width;
+	sh->min_height = sh->max_height = attr.height;
+	XSetWMNormalHints(display, scratch_everywhere_parent_window, sh); 
+	XFree(sh); XCloseDisplay(display);
 #endif
 #endif
 }
