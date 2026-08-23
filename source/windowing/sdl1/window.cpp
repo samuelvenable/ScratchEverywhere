@@ -33,12 +33,13 @@ static const int TARGET_FPS = 60; // SDL1 OpenGL target frame rate for VSync-lik
 static bool resizableGlobal = true; // SDL1 only supports creating one window at a time
 
 bool WindowSDL1::init(int w, int h, bool resizable, const std::string &title) {
-    resizableGlobal = resizable;
 #if (defined(__linux__) && !defined(__ANDROID__) && !defined(WEBOS)) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || (defined(__sun) && defined(__SVR4))
     setenv("SDL_VIDEODRIVER", "x11", 1);
 #elif defined(VITA)
     setenv("VITA_DISABLE_TOUCH_BACK", "1", 1);
 #endif
+
+    resizableGlobal = resizable;
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0) {
         Log::logCritical("Failed to initialize SDL1", true);
         return false;
