@@ -155,9 +155,9 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_re
 }
 
 #if defined(_WIN32) || defined(_WIN64)
-extern "C" __declspec(dllexport) double scratch_everywhere_get_owner() {
+extern "C" __declspec(dllexport) char *scratch_everywhere_get_owner() {
 #else
-extern "C" __attribute__((visibility("default"))) double scratch_everywhere_get_owner() {
+extern "C" __attribute__((visibility("default"))) char *scratch_everywhere_get_owner() {
 #endif
 	return (char *)scratch_everywhere_owner.c_str();
 }
