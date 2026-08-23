@@ -37,9 +37,8 @@
 #include <windows.h>
 #elif defined(__APPLE__)
 #include <AppKit/AppKit.h>
-#elif __has_include(<X11/Xlib.h>) && __has_include(<X11/Xutil.h>)
+#elif __has_include(<X11/Xlib.h>)
 #include <X11/Xlib.h>
-#include <X11/Xutil.h>
 #endif
 #endif
 static ScriptThread monitorDisplayThread;
@@ -50,14 +49,20 @@ static void exitApp() {
     OS::deinit();
 }
 
-#if defined(SE_USE_LIBRARY_BUILD)
-#if defined(USE_LIBDLGMOD)
+#if defined(SE_USE_LIBRARY_BUILD) && defined(USE_LIBDLGMOD)
+int scratch_everywhere_width = -1;
+int scratch_everywhere_height = -1;
+bool scratch_everywhere_resizable = true;
+std::string scratch_everywhere_title = "Scratch Everywhere!";
+std::string scratch_everywhere_owner = "0";
+
 static void scratchEverywhereCleanUp() {
     Scratch::cleanupScratchProject();
     Render::deInit();
     OS::deinit();
     exit(0);
 }
+
 #if defined(_WIN32) || defined(_WIN64)
 static WNDPROC OriginalWndProc = nullptr;
 LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -75,6 +80,7 @@ LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
     }
     return CallWindowProc(OriginalWndProc, hwnd, msg, wParam, lParam);
 }
+
 #elif defined(__APPLE__)
 @interface WindowDelegate : NSObject <NSWindowDelegate>
 @end
@@ -85,7 +91,7 @@ LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
 }
 @end
 #endif
-#endif
+
 #if defined(_WIN32) || defined(_WIN64)
 extern "C" __declspec(dllexport) void scratch_everywhere_destroy() {
 #else
@@ -93,20 +99,78 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_destro
 #endif
     scratchEverywhereCleanUp();
 }
+
 #if defined(_WIN32) || defined(_WIN64)
-extern "C" __declspec(dllexport) const char *scratch_everywhere_step() {
+extern "C" __declspec(dllexport) char *scratch_everywhere_step() {
 #else
-extern "C" __attribute__((visibility("default"))) const char *scratch_everywhere_step() {
+extern "C" __attribute__((visibility("default"))) char *scratch_everywhere_step() {
 #endif
     static char buffer[4];
     std::pair<bool, bool> code = Scratch::stepScratchProject(monitorDisplayThread);
     const int first  = ((code.first)  ? 1 : 0);
     const int second = ((code.second) ? 1 : 0);
     snprintf(buffer, sizeof(buffer), "%d:%d", first, second);
-    return static_cast<const char *>(buffer);
+    return static_cast<char *>(buffer);
 }
-#if defined(USE_LIBDLGMOD)
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
+
+#if defined(_WIN32) || defined(_WIN64)
+extern "C" __declspec(dllexport) double scratch_everywhere_get_width() {
+#else
+extern "C" __attribute__((visibility("default"))) double scratch_everywhere_get_width() {
+#endif
+	return scratch_everywhere_width;
+}
+
+#if defined(_WIN32) || defined(_WIN64)
+extern "C" __declspec(dllexport) double scratch_everywhere_get_height() {
+#else
+extern "C" __attribute__((visibility("default"))) double scratch_everywhere_get_height() {
+#endif
+	return scratch_everywhere_height;
+}
+
+#if defined(_WIN32) || defined(_WIN64)
+extern "C" __declspec(dllexport) void scratch_everywhere_set_size(double width, double height) {
+#else
+extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_size(double width, double height) {
+#endif
+	scratch_everywhere_width = (int)width;
+	scratch_everywhere_height = (int)height;
+}
+
+#if defined(_WIN32) || defined(_WIN64)
+extern "C" __declspec(dllexport) double scratch_everywhere_get_resizable() {
+#else
+extern "C" __attribute__((visibility("default"))) double scratch_everywhere_get_resizable() {
+#endif
+	return scratch_everywhere_resizable;
+}
+
+#if defined(_WIN32) || defined(_WIN64)
+extern "C" __declspec(dllexport) void scratch_everywhere_set_resizable(double resizable) {
+#else
+extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_resizable(double resizable) {
+#endif
+	scratch_everywhere_resizable = (bool)(int)resizable;
+}
+
+#if defined(_WIN32) || defined(_WIN64)
+extern "C" __declspec(dllexport) double scratch_everywhere_get_owner() {
+#else
+extern "C" __attribute__((visibility("default"))) double scratch_everywhere_get_owner() {
+#endif
+	return (char *)scratch_everywhere_owner.c_str();
+}
+
+#if defined(_WIN32) || defined(_WIN64)
+extern "C" __declspec(dllexport) void scratch_everywhere_set_owner(char *owner) {
+#else
+extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_owner(char *owner) {
+#endif
+	scratch_everywhere_owner = owner;
+}
+
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && __has_include(<X11/Xlib.h>)
 static int XErrorHandlerImpl(Display *display, XErrorEvent *event) {
   return 0;
 }
@@ -114,33 +178,31 @@ static int XIOErrorHandlerImpl(Display *display) {
   return 0;
 }
 #endif
-#endif
+
 static void scratchEverywhereSetOwnerWindow(std::string ownerWindow) {
-#if defined(USE_LIBDLGMOD)
 	if (!ownerWindow.empty() && ownerWindow.compare("0") && isdigit(ownerWindow[0])) {
 #if defined(_WIN32) || defined(_WIN64)
 		HWND scratch_everywhere_window = (HWND)(void *)strtoull(widget_get_owner(), nullptr, 10);
-		HWND scratch_everywhere_parent_window = (HWND)(void *)strtoull(ownerWindow.c_str(), nullptr, 10);
-    	if (IsIconic(scratch_everywhere_parent_window)) ShowWindow(scratch_everywhere_parent_window, SW_RESTORE);
-		SetWindowLongPtrW(scratch_everywhere_window, GWLP_HWNDPARENT, (LONG_PTR)(void *)scratch_everywhere_parent_window);
-		OriginalWndProc = (WNDPROC)SetWindowLongPtrW(scratch_everywhere_parent_window, GWLP_WNDPROC, (LONG_PTR)CustomWndProc);
+		HWND scratch_everywhere_owner_window = (HWND)(void *)strtoull(ownerWindow.c_str(), nullptr, 10);
+    	if (IsIconic(scratch_everywhere_owner_window)) ShowWindow(scratch_everywhere_owner_window, SW_RESTORE);
+		SetWindowLongPtrW(scratch_everywhere_window, GWLP_HWNDPARENT, (LONG_PTR)(void *)scratch_everywhere_owner_window);
+		OriginalWndProc = (WNDPROC)SetWindowLongPtrW(scratch_everywhere_owner_window, GWLP_WNDPROC, (LONG_PTR)CustomWndProc);
 #elif defined(__APPLE__)
 		NSWindow *scratch_everywhere_window = (NSWindow *)(void *)strtoull(widget_get_owner(), nullptr, 10);
-		NSWindow *scratch_everywhere_parent_window = (NSWindow *)(void *)strtoull(ownerWindow.c_str(), nullptr, 10);
-		[scratch_everywhere_parent_window addChildWindow:scratch_everywhere_window ordered:NSWindowAbove];
+		NSWindow *scratch_everywhere_owner_window = (NSWindow *)(void *)strtoull(ownerWindow.c_str(), nullptr, 10);
+		[scratch_everywhere_owner_window addChildWindow:scratch_everywhere_window ordered:NSWindowAbove];
 		WindowDelegate *delegate = [[WindowDelegate alloc] init];
-		[scratch_everywhere_parent_window setDelegate:delegate];
-#elif __has_include(<X11/Xlib.h>) && __has_include(<X11/Xutil.h>)
+		[scratch_everywhere_owner_window setDelegate:delegate];
+#elif __has_include(<X11/Xlib.h>)
   		XSetErrorHandler(XErrorHandlerImpl); 
 		XSetIOErrorHandler(XIOErrorHandlerImpl); 
     	Display *display = XOpenDisplay(nullptr);
 		Window scratch_everywhere_window = (Window)strtoul(widget_get_owner(), nullptr, 10); 
-		Window scratch_everywhere_parent_window = (Window)strtoul(ownerWindow.c_str(), nullptr, 10); 
-		XSetTransientForHint(display, scratch_everywhere_window, scratch_everywhere_parent_window);
+		Window scratch_everywhere_owner_window = (Window)strtoul(ownerWindow.c_str(), nullptr, 10); 
+		XSetTransientForHint(display, scratch_everywhere_window, scratch_everywhere_owner_window);
     	XCloseDisplay(display);
 #endif
 	}
-#endif
 }
 #endif
 
@@ -211,23 +273,22 @@ void mainLoop() {
     }
 }
 
-#if !defined(SE_USE_LIBRARY_BUILD)
+#if defined(SE_USE_LIBRARY_BUILD) && defined(USE_LIBDLGMOD)
+#if defined(_WIN32) || defined(_WIN64)
+extern "C" __declspec(dllexport) char *scratch_everywhere_create(char *sb3) {
+#else
+extern "C" __attribute__((visibility("default"))) char *scratch_everywhere_create(char *sb3) {
+#endif
+#else
 #if defined(WINDOWING_SDL1) || defined(WINDOWING_SDL2)
 #include <SDL.h>
-
 extern "C" int main(int argc, char **argv) {
 #else
 int main(int argc, char **argv) {
 #endif
-#else
-#if defined(_WIN32) || defined(_WIN64)
-extern "C" __declspec(dllexport) const char *scratch_everywhere_create(const char *sb3, double width, double height, double resizable, const char *title, const char *window) {
-#else
-extern "C" __attribute__((visibility("default"))) const char *scratch_everywhere_create(const char *sb3, double width, double height, double resizable, const char *title, const char *window) {
 #endif
-#endif
-#if defined(SE_USE_LIBRARY_BUILD)
-    if (!initApp((int)width, (int)height, (bool)(int)resizable, title)) {
+#if defined(SE_USE_LIBRARY_BUILD) && defined(USE_LIBDLGMOD)
+    if (!initApp(scratch_everywhere_width, scratch_everywhere_height, scratch_everywhere_resizable, scratch_everywhere_title)) {
 #else
     if (!initApp(-1, -1, true, "Scratch Everywhere!")) {
 #endif
@@ -301,16 +362,12 @@ extern "C" __attribute__((visibility("default"))) const char *scratch_everywhere
         }
     }
 
-#if defined(SE_USE_LIBRARY_BUILD)
+#if defined(SE_USE_LIBRARY_BUILD) && defined(USE_LIBDLGMOD)
     Unzip::filePath = sb3;
     Unzip::load();
     Scratch::initializeScratchProject();
-#if defined(USE_LIBDLGMOD)
-	scratchEverywhereSetOwnerWindow(window);
-	return widget_get_owner();
-#else
-	return "0";
-#endif
+	scratchEverywhereSetOwnerWindow(scratch_everywhere_window);
+	return (char *)widget_get_owner();
 #else
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(mainLoop, 0, 1);
