@@ -366,7 +366,7 @@ int main(int argc, char **argv) {
     Unzip::filePath = sb3;
     Unzip::load();
     Scratch::initializeScratchProject();
-	scratchEverywhereSetOwnerWindow(scratch_everywhere_window);
+	scratchEverywhereSetOwnerWindow(scratch_everywhere_owner);
 	return (char *)widget_get_owner();
 #else
 #ifdef __EMSCRIPTEN__
