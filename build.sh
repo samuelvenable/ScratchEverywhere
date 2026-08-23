@@ -31,8 +31,6 @@ if [ -d "build" ]; then
         		install_name_tool -add_rpath @executable_path/../Resources scratch-pc;
         		install_name_tool -add_rpath . scratch-pc;
         		install_name_tool -id @rpath/libscratch.dylib scratch-pc;
-        		install_name_tool -change "`brew --prefix sdl2_ttf`/lib/libSDL2_ttf-2.0.0.dylib" @rpath/libsdl2_ttf.dylib scratch-pc;
-        		install_name_tool -change "`brew --prefix sdl2`/lib/libSDL2-2.0.0.dylib" @rpath/libsdl2.dylib scratch-pc;
 			fi;
 			if [ -f "libscratch.dylib" ]; then
         		install_name_tool -delete_rpath "`brew --prefix`/lib" libscratch.dylib;
@@ -42,8 +40,6 @@ if [ -d "build" ]; then
         		install_name_tool -add_rpath @executable_path/../Resources libscratch.dylib;
         		install_name_tool -add_rpath . libscratch.dylib;
         		install_name_tool -id @rpath/libscratch.dylib libscratch.dylib;
-        		install_name_tool -change "`brew --prefix sdl2_ttf`/lib/libSDL2_ttf-2.0.0.dylib" @rpath/libsdl2_ttf.dylib libscratch.dylib;
-        		install_name_tool -change "`brew --prefix sdl2`/lib/libSDL2-2.0.0.dylib" @rpath/libsdl2.dylib libscratch.dylib;
 			fi;
 		fi;
     fi;
