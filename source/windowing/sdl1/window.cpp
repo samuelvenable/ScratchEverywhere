@@ -6,7 +6,6 @@
 #define USE_LIBDLGMOD
 #endif
 #include <cstdlib>
-#include <cstring>
 #endif
 #include <chrono>
 #include <cstdlib>
@@ -88,11 +87,7 @@ bool WindowSDL1::init(int w, int h, bool resizable, const std::string &title) {
 #elif defined(__APPLE__)
     widget_set_owner(std::to_string((unsigned long long)(void *)system_info.info.cocoa.window).c_str());
 #elif (defined(__linux__) && !defined(__ANDROID__) && !defined(WEBOS)) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || (defined(__sun) && defined(__SVR4))
-    char namebuf[4];
-    int maxlen = sizeof(namebuf);
-    if (!strcmp(SDL_VideoDriverName(namebuf, maxlen), "x11")) {
-        widget_set_owner(std::to_string((unsigned long long)(unsigned long)system_info.info.x11.window).c_str());
-    }
+    widget_set_owner(std::to_string((unsigned long long)(unsigned long)system_info.info.x11.window).c_str());
 #endif
 #endif
 
