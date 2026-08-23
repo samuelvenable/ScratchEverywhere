@@ -115,52 +115,31 @@ static int XIOErrorHandlerImpl(Display *display) {
 }
 #endif
 #endif
-static void scratchEverywhereEmbedInParentWindow(std::string window) {
+static void scratchEverywhereSetOwnerWindow(std::string ownerWindow) {
 #if defined(USE_LIBDLGMOD)
+	if (!ownerWindow.empty() && ownerWindow.compare("0") && isdigit(ownerWindow[0])) {
 #if defined(_WIN32) || defined(_WIN64)
-	if (window.empty() || !window.compare("0") || !isdigit(window[0])) return;
-	HWND scratch_everywhere_window = (HWND)(void *)strtoull(widget_get_owner(), nullptr, 10);
-	HWND scratch_everywhere_parent_window = (HWND)(void *)strtoull(window.c_str(), nullptr, 10);
-    if (IsIconic(scratch_everywhere_parent_window)) ShowWindow(scratch_everywhere_parent_window, SW_RESTORE);
-	SetWindowLongPtrW(scratch_everywhere_window, GWLP_HWNDPARENT, (LONG_PTR)(void *)scratch_everywhere_parent_window);
-    SetWindowLongPtrW(scratch_everywhere_parent_window, GWL_STYLE, (GetWindowLongPtrW(scratch_everywhere_parent_window, GWL_STYLE) | WS_CLIPCHILDREN | WS_CLIPSIBLINGS) & ~(WS_THICKFRAME | WS_MAXIMIZEBOX));
-	SetWindowLongPtrW(scratch_everywhere_window, GWL_STYLE, (GetWindowLongPtrW(scratch_everywhere_window, GWL_STYLE) | WS_POPUP) & ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU));
-	SetWindowLongPtrW(scratch_everywhere_window, GWL_EXSTYLE, GetWindowLongPtrW(scratch_everywhere_window, GWL_EXSTYLE) & ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
-	RECT rect; GetClientRect(scratch_everywhere_parent_window, &rect); MoveWindow(scratch_everywhere_window, 0, 0, (rect.right - rect.left), (rect.bottom - rect.top), TRUE);
-    SetWindowPos(scratch_everywhere_parent_window, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED); 
-	SetWindowPos(scratch_everywhere_window, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
-	OriginalWndProc = (WNDPROC)SetWindowLongPtrW(scratch_everywhere_parent_window, GWLP_WNDPROC, (LONG_PTR)CustomWndProc);
-	SetParent(scratch_everywhere_window, scratch_everywhere_parent_window);
+		HWND scratch_everywhere_window = (HWND)(void *)strtoull(widget_get_owner(), nullptr, 10);
+		HWND scratch_everywhere_parent_window = (HWND)(void *)strtoull(ownerWindow.c_str(), nullptr, 10);
+    	if (IsIconic(scratch_everywhere_parent_window)) ShowWindow(scratch_everywhere_parent_window, SW_RESTORE);
+		SetWindowLongPtrW(scratch_everywhere_window, GWLP_HWNDPARENT, (LONG_PTR)(void *)scratch_everywhere_parent_window);
+		OriginalWndProc = (WNDPROC)SetWindowLongPtrW(scratch_everywhere_parent_window, GWLP_WNDPROC, (LONG_PTR)CustomWndProc);
 #elif defined(__APPLE__)
-	if (window.empty() || !window.compare("0") || !isdigit(window[0])) return;
-	// On macOS the OS is so locked-down that this only works for windows belonging to the same process:
-	NSWindow *scratch_everywhere_window = (NSWindow *)(void *)strtoull(widget_get_owner(), nullptr, 10);
-	NSWindow *scratch_everywhere_parent_window = (NSWindow *)(void *)strtoull(window.c_str(), nullptr, 10);
-	[scratch_everywhere_parent_window addChildWindow:scratch_everywhere_window ordered:NSWindowAbove];
-	[scratch_everywhere_window setStyleMask:NSWindowStyleMaskBorderless]; NSEvent *event = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDown location:
-	NSMakePoint(scratch_everywhere_window.frame.size.width / 2, scratch_everywhere_window.frame.size.height / 2) modifierFlags:0 timestamp:0 windowNumber:
-	[scratch_everywhere_window windowNumber] context:nullptr eventNumber:0 clickCount:1 pressure:1.0]; [scratch_everywhere_window sendEvent:event];
-	NSPoint origin = scratch_everywhere_parent_window.frame.origin; NSSize size = scratch_everywhere_parent_window.contentView.bounds.size; 
-	[scratch_everywhere_window setFrame:NSMakeRect(origin.x, origin.y, size.width, size.height) display:YES animate:NO];
-	[[scratch_everywhere_parent_window standardWindowButton:NSWindowZoomButton] setEnabled:NO];
-	scratch_everywhere_parent_window.styleMask &= ~NSWindowStyleMaskResizable;
-	WindowDelegate *delegate = [[WindowDelegate alloc] init];
-	[scratch_everywhere_parent_window setDelegate:delegate];
+		NSWindow *scratch_everywhere_window = (NSWindow *)(void *)strtoull(widget_get_owner(), nullptr, 10);
+		NSWindow *scratch_everywhere_parent_window = (NSWindow *)(void *)strtoull(ownerWindow.c_str(), nullptr, 10);
+		[scratch_everywhere_parent_window addChildWindow:scratch_everywhere_window ordered:NSWindowAbove];
+		WindowDelegate *delegate = [[WindowDelegate alloc] init];
+		[scratch_everywhere_parent_window setDelegate:delegate];
 #elif __has_include(<X11/Xlib.h>) && __has_include(<X11/Xutil.h>)
-    if (window.empty() || !window.compare("0") || !isdigit(window[0])) return;
-    // Error handlers force ignored failures on Wayland, thus avoiding segfaults:
-  	XSetErrorHandler(XErrorHandlerImpl); XSetIOErrorHandler(XIOErrorHandlerImpl); 
-    Display *display = XOpenDisplay(nullptr); Window scratch_everywhere_window = 
-    (Window)strtoul(widget_get_owner(), nullptr, 10); Window scratch_everywhere_parent_window = 
-    (Window)strtoul(window.c_str(), nullptr, 10); XSetTransientForHint(display, scratch_everywhere_window, 
-    scratch_everywhere_parent_window); XReparentWindow(display, scratch_everywhere_window, 
-    scratch_everywhere_parent_window, 0, 0); XWindowAttributes attr; XGetWindowAttributes(display, 
-    scratch_everywhere_parent_window, &attr); XResizeWindow(display, scratch_everywhere_window, attr.width, 
-    attr.height); XSizeHints *sh = XAllocSizeHints(); sh->flags = PMinSize | PMaxSize; sh->min_width = 
-    sh->max_width = attr.width; sh->min_height = sh->max_height = attr.height; XSetWMNormalHints(display, 
-    scratch_everywhere_parent_window, sh); XFree(sh); XCloseDisplay(display);
-    // FIXME: This is too much work to rewrite in Wayland (might do later)...
+  		XSetErrorHandler(XErrorHandlerImpl); 
+		XSetIOErrorHandler(XIOErrorHandlerImpl); 
+    	Display *display = XOpenDisplay(nullptr);
+		Window scratch_everywhere_window = (Window)strtoul(widget_get_owner(), nullptr, 10); 
+		Window scratch_everywhere_parent_window = (Window)strtoul(ownerWindow.c_str(), nullptr, 10); 
+		XSetTransientForHint(display, scratch_everywhere_window, scratch_everywhere_parent_window);
+    	XCloseDisplay(display);
 #endif
+	}
 #endif
 }
 #endif
@@ -242,13 +221,13 @@ int main(int argc, char **argv) {
 #endif
 #else
 #if defined(_WIN32) || defined(_WIN64)
-extern "C" __declspec(dllexport) const char *scratch_everywhere_create(const char *sb3, const char *title, const char *window) {
+extern "C" __declspec(dllexport) const char *scratch_everywhere_create(const char *sb3, double width, double height, double resizable, const char *title, const char *window) {
 #else
-extern "C" __attribute__((visibility("default"))) const char *scratch_everywhere_create(const char *sb3, const char *title, const char *window) {
+extern "C" __attribute__((visibility("default"))) const char *scratch_everywhere_create(const char *sb3, double width, double height, double resizable, const char *title, const char *window) {
 #endif
 #endif
 #if defined(SE_USE_LIBRARY_BUILD)
-    if (!initApp(640, 480, false, title)) {
+    if (!initApp((int)width, (int)height, (bool)(int)resizable, title)) {
 #else
     if (!initApp(-1, -1, true, "Scratch Everywhere!")) {
 #endif
@@ -327,11 +306,7 @@ extern "C" __attribute__((visibility("default"))) const char *scratch_everywhere
     Unzip::load();
     Scratch::initializeScratchProject();
 #if defined(USE_LIBDLGMOD)
-	if (window) {
-		scratchEverywhereEmbedInParentWindow(window);
-	}
-#endif
-#if defined(USE_LIBDLGMOD)
+	scratchEverywhereSetOwnerWindow(window);
 	return widget_get_owner();
 #else
 	return "0";
