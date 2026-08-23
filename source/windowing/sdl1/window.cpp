@@ -34,7 +34,6 @@ static bool resizableGlobal = true; // SDL1 only supports creating one window at
 
 bool WindowSDL1::init(int w, int h, bool resizable, const std::string &title) {
     resizableGlobal = resizable;
-
 #if (defined(__linux__) && !defined(__ANDROID__) && !defined(WEBOS)) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || (defined(__sun) && defined(__SVR4))
     setenv("SDL_VIDEODRIVER", "x11", 1);
 #elif defined(VITA)
