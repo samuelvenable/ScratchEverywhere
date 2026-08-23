@@ -39,13 +39,13 @@ bool WindowSDL1::init(int w, int h, bool resizable, const std::string &title) {
     setenv("VITA_DISABLE_TOUCH_BACK", "1", 1);
 #endif
 
-    resizableGlobal = resizable;
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0) {
         Log::logCritical("Failed to initialize SDL1", true);
         return false;
     }
     SDL_EnableUNICODE(1);
-    SDL_WM_SetCaption(title.c_str(), NULL);
+    SDL_WM_SetCaption(title.c_str(), nullptr);
+    resizableGlobal = resizable;
 
 #ifdef RENDERER_OPENGL
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
