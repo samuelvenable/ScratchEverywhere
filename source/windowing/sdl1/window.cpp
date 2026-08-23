@@ -5,6 +5,7 @@
 #if !defined(USE_LIBDLGMOD)
 #define USE_LIBDLGMOD
 #endif
+#include <cstdlib>
 #include <cstring>
 #endif
 #include <chrono>
@@ -34,7 +35,9 @@ static bool resizableGlobal = true; // SDL1 only supports creating one window at
 bool WindowSDL1::init(int w, int h, bool resizable, const std::string &title) {
     resizableGlobal = resizable;
 
-#if defined(VITA)
+#if (defined(__linux__) && !defined(__ANDROID__) && !defined(WEBOS)) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || (defined(__sun) && defined(__SVR4))
+    setenv("SDL_VIDEODRIVER", "x11", 1);
+#elif defined(VITA)
     setenv("VITA_DISABLE_TOUCH_BACK", "1", 1);
 #endif
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0) {
