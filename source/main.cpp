@@ -53,7 +53,7 @@ static void exitApp() {
 int scratch_everywhere_width = -1;
 int scratch_everywhere_height = -1;
 bool scratch_everywhere_resizable = true;
-std::string scratch_everywhere_title = "Scratch Everywhere!";
+std::string scratch_everywhere_caption = "Scratch Everywhere!";
 std::string scratch_everywhere_owner = "0";
 
 static void scratchEverywhereCleanUp() {
@@ -153,6 +153,21 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_re
 #endif
 	scratch_everywhere_resizable = (bool)(int)resizable;
 }
+#if defined(_WIN32) || defined(_WIN64)
+extern "C" __declspec(dllexport) char *scratch_everywhere_get_caption() {
+#else
+extern "C" __attribute__((visibility("default"))) char *scratch_everywhere_get_caption() {
+#endif
+	return (char *)scratch_everywhere_caption.c_str();
+}
+
+#if defined(_WIN32) || defined(_WIN64)
+extern "C" __declspec(dllexport) void scratch_everywhere_set_caption(char *caption) {
+#else
+extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_caption(char *caption) {
+#endif
+	scratch_everywhere_caption = caption;
+}
 
 #if defined(_WIN32) || defined(_WIN64)
 extern "C" __declspec(dllexport) char *scratch_everywhere_get_owner() {
@@ -206,8 +221,8 @@ static void scratchEverywhereSetOwnerWindow(std::string ownerWindow) {
 }
 #endif
 
-static bool initApp(int width, int height, bool resizable, std::string title) {
-    return Scratch::initializeRuntime(width, height, resizable, title);
+static bool initApp(int width, int height, bool resizable, std::string caption) {
+    return Scratch::initializeRuntime(width, height, resizable, caption);
 }
 
 bool activateMainMenu() {
@@ -288,11 +303,9 @@ int main(int argc, char **argv) {
 #endif
 #endif
 #if defined(SE_USE_LIBRARY_BUILD) && defined(USE_LIBDLGMOD)
-    if (!initApp(scratch_everywhere_width, scratch_everywhere_height, scratch_everywhere_resizable, scratch_everywhere_title)) {
+    if (!initApp(scratch_everywhere_width, scratch_everywhere_height, scratch_everywhere_resizable, scratch_everywhere_caption)) {
 #else
     if (!initApp(-1, -1, true, "Scratch Everywhere!")) {
-#endif
-#if !defined(SE_USE_LIBRARY_BUILD)
         exitApp();
         return 1;
 #endif
@@ -301,7 +314,7 @@ int main(int argc, char **argv) {
     srand(time(nullptr));
 
     bool enableInspector = false;
-#if !defined(SE_USE_LIBRARY_BUILD)
+#if !(defined(SE_USE_LIBRARY_BUILD) && defined(USE_LIBDLGMOD))
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--inspector") {
