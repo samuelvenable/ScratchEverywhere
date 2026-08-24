@@ -56,13 +56,6 @@ bool scratch_everywhere_resizable = true;
 std::string scratch_everywhere_caption = "Scratch Everywhere!";
 std::string scratch_everywhere_owner = "0";
 
-static void scratchEverywhereCleanUp() {
-    Scratch::cleanupScratchProject();
-    Render::deInit();
-    OS::deinit();
-    exit(0);
-}
-
 #if defined(_WIN32) || defined(_WIN64)
 static WNDPROC OriginalWndProc = nullptr;
 LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -94,7 +87,10 @@ extern "C" __declspec(dllexport) void scratch_everywhere_destroy() {
 #else
 extern "C" __attribute__((visibility("default"))) void scratch_everywhere_destroy() {
 #endif
-    scratchEverywhereCleanUp();
+    Scratch::cleanupScratchProject();
+    Render::deInit();
+    OS::deinit();
+    exit(0);
 }
 
 #if defined(_WIN32) || defined(_WIN64)
