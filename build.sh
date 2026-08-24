@@ -9,8 +9,8 @@ fi;
 if [ -d "build" ]; then
 	cd build;
 	if [ "$OS" = "Windows_NT" ]; then
-		cmake .. -DCMAKE_BUILD_TYPE=Release -DSE_DEPS="source" -DSE_RENDERER="opengl_core" -DSE_WINDOWING="glfw" -DSE_AUDIO_ENGINE="sdl3" -DSE_CLOUDVARS=OFF -DSE_DOWNLOAD=OFF -DSE_USE_LIBRARY_BUILD=OFF && ninja;
-		cmake .. -DCMAKE_BUILD_TYPE=Release -DSE_DEPS="source" -DSE_RENDERER="opengl_core" -DSE_WINDOWING="glfw" -DSE_AUDIO_ENGINE="sdl3" -DSE_CLOUDVARS=OFF -DSE_DOWNLOAD=OFF -DSE_USE_LIBRARY_BUILD=ON && ninja;
+		cmake .. -DCMAKE_BUILD_TYPE=Release -DSE_RENDERER="sdl2" -DSE_WINDOWING="sdl2" -DSE_AUDIO_ENGINE="sdl2" -DSE_CLOUDVARS=OFF -DSE_DOWNLOAD=OFF -DSE_USE_LIBRARY_BUILD=OFF && ninja;
+		cmake .. -DCMAKE_BUILD_TYPE=Release -DSE_RENDERER="sdl2" -DSE_WINDOWING="sdl2" -DSE_AUDIO_ENGINE="sdl2" -DSE_CLOUDVARS=OFF -DSE_DOWNLOAD=OFF -DSE_USE_LIBRARY_BUILD=ON && ninja;
 		if [ -f "scratch-pc.exe" ]; then
 			ldd "./scratch-pc.exe" | grep "$MSYSTEM_PREFIX" | awk '{ print $3 }' | xargs -I {} cp -f {} "./";
 		fi;
@@ -18,8 +18,8 @@ if [ -d "build" ]; then
 			ldd "./libscratch.dll" | grep "$MSYSTEM_PREFIX" | awk '{ print $3 }' | xargs -I {} cp -f {} "./";
 		fi;
 	else
-		cmake .. -DCMAKE_BUILD_TYPE=Release -DSE_DEPS="source" -DSE_RENDERER="opengl_core" -DSE_WINDOWING="glfw" -DSE_AUDIO_ENGINE="sdl3" -DSE_CLOUDVARS=OFF -DSE_DOWNLOAD=OFF -DSE_USE_LIBRARY_BUILD=OFF && make;
-		cmake .. -DCMAKE_BUILD_TYPE=Release -DSE_DEPS="source" -DSE_RENDERER="opengl_core" -DSE_WINDOWING="glfw" -DSE_AUDIO_ENGINE="sdl3" -DSE_CLOUDVARS=OFF -DSE_DOWNLOAD=OFF -DSE_USE_LIBRARY_BUILD=ON && make;
+		cmake .. -DCMAKE_BUILD_TYPE=Release -DSE_RENDERER="sdl2" -DSE_WINDOWING="sdl2" -DSE_AUDIO_ENGINE="sdl2" -DSE_CLOUDVARS=OFF -DSE_DOWNLOAD=OFF -DSE_USE_LIBRARY_BUILD=OFF && make;
+		cmake .. -DCMAKE_BUILD_TYPE=Release -DSE_RENDERER="sdl2" -DSE_WINDOWING="sdl2" -DSE_AUDIO_ENGINE="sdl2" -DSE_CLOUDVARS=OFF -DSE_DOWNLOAD=OFF -DSE_USE_LIBRARY_BUILD=ON && make;
 	fi;
 	if [ `uname -s` = "Darwin" ]; then
     	if sw_vers | grep -q "macOS\|Mac OS X"; then
@@ -31,6 +31,8 @@ if [ -d "build" ]; then
         		install_name_tool -add_rpath @executable_path/../Resources scratch-pc;
         		install_name_tool -add_rpath . scratch-pc;
         		install_name_tool -id @rpath/libscratch.dylib scratch-pc;
+        		install_name_tool -change "`brew --prefix sdl2_ttf`/lib/libSDL2_ttf-2.0.0.dylib" @rpath/libsdl2_ttf.dylib scratch-pc;
+        		install_name_tool -change "`brew --prefix sdl2`/lib/libSDL2-2.0.0.dylib" @rpath/libsdl2.dylib scratch-pc;
 			fi;
 			if [ -f "libscratch.dylib" ]; then
         		install_name_tool -delete_rpath "`brew --prefix`/lib" libscratch.dylib;
@@ -40,6 +42,8 @@ if [ -d "build" ]; then
         		install_name_tool -add_rpath @executable_path/../Resources libscratch.dylib;
         		install_name_tool -add_rpath . libscratch.dylib;
         		install_name_tool -id @rpath/libscratch.dylib libscratch.dylib;
+        		install_name_tool -change "`brew --prefix sdl2_ttf`/lib/libSDL2_ttf-2.0.0.dylib" @rpath/libsdl2_ttf.dylib libscratch.dylib;
+        		install_name_tool -change "`brew --prefix sdl2`/lib/libSDL2-2.0.0.dylib" @rpath/libsdl2.dylib libscratch.dylib;
 			fi;
 		fi;
     fi;
