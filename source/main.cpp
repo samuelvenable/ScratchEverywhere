@@ -69,12 +69,10 @@ LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
     switch (msg) {
     case WM_SYSCOMMAND:
         if ((wParam & 0xFFF0) == SC_CLOSE) {
-            scratchEverywhereCleanUp();
             return 0;
         }
         break;
     case WM_CLOSE:
-        scratchEverywhereCleanUp();
         return 0;
         break;
     }
@@ -86,8 +84,7 @@ LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
 @end
 @implementation WindowDelegate
 - (BOOL)windowShouldClose:(id)sender {
-    scratchEverywhereCleanUp();
-	return YES;
+	return NO;
 }
 @end
 #endif
