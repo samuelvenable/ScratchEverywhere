@@ -146,6 +146,7 @@ extern "C" __attribute__((visibility("default"))) void scratch_everywhere_set_re
 #endif
 	scratch_everywhere_resizable = (bool)(int)resizable;
 }
+
 #if defined(_WIN32) || defined(_WIN64)
 extern "C" __declspec(dllexport) char *scratch_everywhere_get_caption() {
 #else
