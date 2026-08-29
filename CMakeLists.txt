@@ -280,13 +280,8 @@ if(SE_EXECUTABLE)
 	endif()
 	if(LIBRETRO)
 		add_library(scratch-everywhere SHARED ${SOURCE_FILES})
-<<<<<<< HEAD
 		set_target_properties(scratch-everywhere PROPERTIES PREFIX "" OUTPUT_NAME "${SE_OUTPUT_NAME}")
-		se_add_dependency(scratch-everywhere libretro)
-=======
-		set_target_properties(scratch-everywhere PROPERTIES PREFIX "")
 		cl_add_dep(scratch-everywhere libretro)
->>>>>>> 38376a4990e2e758e6609e8bdb2012340ae40c8b
 	else()
 		if(SE_USE_LIBRARY_BUILD)
 			add_library(scratch-everywhere SHARED ${SOURCE_FILES})
