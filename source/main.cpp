@@ -272,7 +272,11 @@ void mainLoop() {
     Unzip::filePath = "";
     Scratch::nextProject = false;
     Scratch::dataNextProject = Value();
+<<<<<<< HEAD
 #if defined(ENABLE_MENU)
+=======
+#ifdef ENABLE_MENU
+>>>>>>> ScratchEverywhere-main
     if (OS::toExit || !activateMainMenu()) {
 #else
     if (OS::toExit) {
