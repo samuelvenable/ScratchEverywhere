@@ -36,10 +36,12 @@ bool WindowSDL3::init(int width, int height, bool resizable, const std::string &
     setenv("VITA_DISABLE_TOUCH_BACK", "1", 1);
 #endif
 
-#if (defined(__DragonFly__) || defined(__NetBSD__) || (defined(__sun) && defined(__SVR4)))
+#if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__) || (defined(__linux__) && !defined(__ANDROID__) && !defined(WEBOS)) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || (defined(__sun) && defined(__SVR4))
+#if defined(__DragonFly__) || defined(__NetBSD__) || (defined(__sun) && defined(__SVR4))
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl,opengles,opengles2,software");
 #else
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, "direct3d12,direct3d11,direct3d,metal,vulkan,gpu,software");
+#endif
 #endif
 
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD | SDL_INIT_EVENTS)) {
