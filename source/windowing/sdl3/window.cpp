@@ -5,6 +5,7 @@
 #if !defined(USE_LIBDLGMOD)
 #define USE_LIBDLGMOD
 #endif
+#include <cstdlib>
 #include <cstring>
 #endif
 #include <cstdlib>
@@ -31,7 +32,7 @@ SDL_Point touchPosition;
 
 bool WindowSDL3::init(int width, int height, bool resizable, const std::string &title) {
 #if (defined(__linux__) && !defined(__ANDROID__) && !defined(WEBOS)) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || (defined(__sun) && defined(__SVR4))
-    SDL_setenv("SDL_VIDEODRIVER", "x11", 1);
+    setenv("SDL_VIDEODRIVER", "x11", 1);
 #elif defined(VITA)
     setenv("VITA_DISABLE_TOUCH_BACK", "1", 1);
 #endif
