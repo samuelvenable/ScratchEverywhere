@@ -191,24 +191,34 @@ static int XIOErrorHandlerImpl(Display *display) {
 static void scratchEverywhereSetOwnerWindow(std::string ownerWindow) {
 	if (!ownerWindow.empty() && ownerWindow.compare("0") && isdigit(ownerWindow[0])) {
 #if defined(_WIN32) || defined(_WIN64)
+		RECT scratch_everywhere_owner_window_rectangle;
 		HWND scratch_everywhere_window = (HWND)(void *)strtoull(widget_get_owner(), nullptr, 10);
 		HWND scratch_everywhere_owner_window = (HWND)(void *)strtoull(ownerWindow.c_str(), nullptr, 10);
     	if (IsIconic(scratch_everywhere_owner_window)) ShowWindow(scratch_everywhere_owner_window, SW_RESTORE);
+		GetWindowRect(scratch_everywhere_owner_window, &scratch_everywhere_owner_window_rectangle);
+		LONG left = scratch_everywhere_owner_window_rectangle.left, top = scratch_everywhere_owner_window_rectangle.top;
 		SetWindowLongPtrW(scratch_everywhere_window, GWLP_HWNDPARENT, (LONG_PTR)(void *)scratch_everywhere_owner_window);
+		SetWindowPos(scratch_everywhere_window, nullptr, left, top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 		OriginalWndProc = (WNDPROC)SetWindowLongPtrW(scratch_everywhere_owner_window, GWLP_WNDPROC, (LONG_PTR)CustomWndProc);
 #elif defined(__APPLE__)
 		NSWindow *scratch_everywhere_window = (NSWindow *)(void *)strtoull(widget_get_owner(), nullptr, 10);
 		NSWindow *scratch_everywhere_owner_window = (NSWindow *)(void *)strtoull(ownerWindow.c_str(), nullptr, 10);
 		[scratch_everywhere_owner_window addChildWindow:scratch_everywhere_window ordered:NSWindowAbove];
+		double x = scratch_everywhere_owner_window.frame.origin.x, y = scratch_everywhere_owner_window.frame.origin.y;
+		[scratch_everywhere_window setFrameOrigin:NSMakePoint(x, y)];
 		WindowDelegate *delegate = [[WindowDelegate alloc] init];
 		[scratch_everywhere_owner_window setDelegate:delegate];
 #elif __has_include(<X11/Xlib.h>)
   		XSetErrorHandler(XErrorHandlerImpl); 
 		XSetIOErrorHandler(XIOErrorHandlerImpl); 
     	Display *display = XOpenDisplay(nullptr);
+		XWindowAttributes scratch_everywhere_owner_window_attributes;
 		Window scratch_everywhere_window = (Window)strtoul(widget_get_owner(), nullptr, 10); 
 		Window scratch_everywhere_owner_window = (Window)strtoul(ownerWindow.c_str(), nullptr, 10); 
 		XSetTransientForHint(display, scratch_everywhere_window, scratch_everywhere_owner_window);
+    	XGetWindowAttributes(display, scratch_everywhere_owner_window, &scratch_everywhere_owner_window_attributes);
+		int x = scratch_everywhere_owner_window_attributes.x, y = scratch_everywhere_owner_window_attributes.y;
+		XMoveWindow(display, scratch_everywhere_window, x, y);
     	XCloseDisplay(display);
 #endif
 	}
