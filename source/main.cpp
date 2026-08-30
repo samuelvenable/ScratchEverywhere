@@ -196,9 +196,9 @@ static void scratchEverywhereSetOwnerWindow(std::string ownerWindow) {
 		HWND scratch_everywhere_owner_window = (HWND)(void *)strtoull(ownerWindow.c_str(), nullptr, 10);
     	if (IsIconic(scratch_everywhere_owner_window)) ShowWindow(scratch_everywhere_owner_window, SW_RESTORE);
 		GetWindowRect(scratch_everywhere_owner_window, &scratch_everywhere_owner_window_rectangle);
-		LONG left = scratch_everywhere_owner_window_rectangle.left, top = scratch_everywhere_owner_window_rectangle.top;
+		LONG x = scratch_everywhere_owner_window_rectangle.left, y = scratch_everywhere_owner_window_rectangle.top;
 		SetWindowLongPtrW(scratch_everywhere_window, GWLP_HWNDPARENT, (LONG_PTR)(void *)scratch_everywhere_owner_window);
-		SetWindowPos(scratch_everywhere_window, nullptr, left, top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+		SetWindowPos(scratch_everywhere_window, nullptr, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 		OriginalWndProc = (WNDPROC)SetWindowLongPtrW(scratch_everywhere_owner_window, GWLP_WNDPROC, (LONG_PTR)CustomWndProc);
 #elif defined(__APPLE__)
 		NSWindow *scratch_everywhere_window = (NSWindow *)(void *)strtoull(widget_get_owner(), nullptr, 10);
