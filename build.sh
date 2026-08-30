@@ -17,11 +17,9 @@ if [ -d "build" ]; then
 		if [ -f "libscratch.dll" ]; then
 			ldd "./libscratch.dll" | grep "$MSYSTEM_PREFIX" | awk '{ print $3 }' | xargs -I {} cp -f {} "./";
 		fi;
-	else
+	elif [ `uname -s` = "Darwin" ]; then
 		cmake .. -DCMAKE_BUILD_TYPE=Release -DSE_RENDERER="sdl2" -DSE_WINDOWING="sdl2" -DSE_AUDIO_ENGINE="sdl2" -DSE_CLOUDVARS=OFF -DSE_DOWNLOAD=OFF -DSE_USE_LIBRARY_BUILD=OFF && make;
 		cmake .. -DCMAKE_BUILD_TYPE=Release -DSE_RENDERER="sdl2" -DSE_WINDOWING="sdl2" -DSE_AUDIO_ENGINE="sdl2" -DSE_CLOUDVARS=OFF -DSE_DOWNLOAD=OFF -DSE_USE_LIBRARY_BUILD=ON && make;
-	fi;
-	if [ `uname -s` = "Darwin" ]; then
     	if sw_vers | grep -q "macOS\|Mac OS X"; then
 			if [ -f "scratch-pc" ]; then
         		install_name_tool -delete_rpath "`brew --prefix`/lib" scratch-pc;
@@ -46,5 +44,8 @@ if [ -d "build" ]; then
         		install_name_tool -change "`brew --prefix sdl2`/lib/libSDL2-2.0.0.dylib" @rpath/libsdl2.dylib libscratch.dylib;
 			fi;
 		fi;
-    fi;
+    elif [ `uname -s` = "Linux" ]; then
+		cmake .. -DCMAKE_BUILD_TYPE=Release -DSE_RENDERER="sdl3" -DSE_WINDOWING="sdl3" -DSE_AUDIO_ENGINE="sdl3" -DSE_CLOUDVARS=OFF -DSE_DOWNLOAD=OFF -DSE_USE_LIBRARY_BUILD=OFF && make;
+		cmake .. -DCMAKE_BUILD_TYPE=Release -DSE_RENDERER="sdl3" -DSE_WINDOWING="sdl3" -DSE_AUDIO_ENGINE="sdl3" -DSE_CLOUDVARS=OFF -DSE_DOWNLOAD=OFF -DSE_USE_LIBRARY_BUILD=ON && make;
+	fi;
 fi;
