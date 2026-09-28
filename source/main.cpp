@@ -296,6 +296,11 @@ void mainLoop() {
     }
 }
 
+bool in_path = true;
+bool hasdeps() {
+    return in_path;
+}
+
 #if defined(SE_USE_LIBRARY_BUILD) && defined(USE_LIBDLGMOD)
 #if defined(_WIN32) || defined(_WIN64)
 extern "C" __declspec(dllexport) char *scratch_everywhere_create(char *sb3) {
